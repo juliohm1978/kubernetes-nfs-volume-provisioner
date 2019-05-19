@@ -1,0 +1,3 @@
+build:
+
+push: build

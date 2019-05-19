@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myclaim
+  annotations:
+    nvs-provisioner.juliohm.com.br/init-perms: "false"
+    nvs-provisioner.juliohm.com.br/uid: "1000"
+    nvs-provisioner.juliohm.com.br/gid: "1000"
+    nvs-provisioner.juliohm.com.br/mode: "644"
+    nvs-provisioner.juliohm.com.br/read-only: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 8Gi
+  storageClassName: sc01
+
