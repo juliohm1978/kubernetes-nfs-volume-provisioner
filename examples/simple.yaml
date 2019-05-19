@@ -7,21 +7,9 @@ parameters:
   pvNamePrefix: ""
   server: 10.10.10.3
   share: /meushare
-  # path: /caminho2
-reclaimPolicy: Retain
-mountOptions:
-  - debug
-volumeBindingMode: Immediate
-
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: sc02
-provisioner: kubernetes.io/aws-ebs
-parameters:
-  type: gp2
-reclaimPolicy: Retain
+  # path: /caminho
+  # namespace: some-namespace
+reclaimPolicy: Delete
 mountOptions:
   - debug
 volumeBindingMode: Immediate
