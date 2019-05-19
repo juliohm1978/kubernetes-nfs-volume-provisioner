@@ -151,19 +151,19 @@ def initPVData(pvc, sc):
                 if ANNOTATION_UID in pvc["metadata"]["annotations"]:
                     cmd = ["chown", pvc["metadata"]["annotations"][ANNOTATION_UID], dirlocalfull]
                     subprocess.check_call(cmd)
-                logging.debug("User permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
+                    logging.debug("User permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
 
                 # adjust group permissions
                 if ANNOTATION_GID in pvc["metadata"]["annotations"]:
                     cmd = ["chgrp", pvc["metadata"]["annotations"][ANNOTATION_GID], dirlocalfull]
                     subprocess.check_call(cmd)
-                logging.debug("Group permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
+                    logging.debug("Group permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
 
                 # adjust group permissions
                 if ANNOTATION_MODE in pvc["metadata"]["annotations"]:
                     cmd = ["chmod", pvc["metadata"]["annotations"][ANNOTATION_MODE], dirlocalfull]
                     subprocess.check_call(cmd)
-                logging.debug("File permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_MODE])
+                    logging.debug("File permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_MODE])
             finally:
                 # umount
                 cmd = ["umount", dirlocal]
@@ -367,6 +367,12 @@ def removePV(pvname):
     if PROVISIONER_NAME != sc["provisioner"]:
         return
 
+    keeppv = "false"
+    if "keepPv" in sc["parameters"]:
+        keeppv = sc["parameters"]["keepPv"]
+    if keeppv == "true":
+        return
+
     logging.info("Found PV "+pvname+" in state Released")
 
     cmd = ["kubectl", "delete", "pv", pvname]
@@ -383,7 +389,11 @@ def removePV(pvname):
 ################################################################################
 logging.info("WELCOME: nfs-volume-provisioner, juliohm.com.br")
 logging.info("Watching for PVCs")
+
+cmd = ["kubectl", "get", "pvc", "--no-headers", "--watch"]
+proc = subprocess.Popen(cmd,stdout=subprocess.PIPE)
 while True:
+    proc.stdout.readline()
     try:
         # Look for pending PVCs
         cmd = ["kubectl", "get", "pvc", "--all-namespaces", "--no-headers"]
@@ -428,4 +438,6 @@ while True:
         logging.error("Unable to check for PVCs")
         logging.error(err, exc_info=True)
 
-    time.sleep(args.interval)
+    rc = proc.poll()
+    if rc:
+        sys.exit(rc)

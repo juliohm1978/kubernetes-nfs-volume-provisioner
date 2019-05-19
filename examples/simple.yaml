@@ -9,7 +9,6 @@ parameters:
   share: /meushare
   # path: /caminho
   # namespace: some-namespace
+  # keepPv: "false"
 reclaimPolicy: Delete
-mountOptions:
-  - debug
 volumeBindingMode: Immediate
