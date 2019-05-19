@@ -6,8 +6,8 @@ provisioner: nfs-provisioner.juliohm.com.br
 parameters:
   pvNamePrefix: ""
   server: 10.10.10.3
-  share: /meushare
-  # path: /caminho
+  share: /myshare
+  # path: /subpath
   # namespace: some-namespace
   # keepPv: "false"
 reclaimPolicy: Delete
