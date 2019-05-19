@@ -89,7 +89,7 @@ status:
 
 Metadata from the StorageClass and PVC are used to create the PV.
 
-> **IMPORTANT**: The PV will contain some special labels related to the StorageClass and PVC used to create it. You should avoid removing or modifying these labels, since they help the controller find PVCs that need to be removed from the cluster when their PVC counterparts are no longer available.
+> **IMPORTANT**: The PV will contain some special labels related to the StorageClass and PVC used to create it. You should avoid removing or modifying these labels, since they help the controller find PVs that need to be removed from the cluster when their PVC counterparts are no longer available.
 
 The StorageClass parameters may be quite self explanatory, but here is a rundown of what each one means:
 
