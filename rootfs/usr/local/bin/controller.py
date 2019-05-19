@@ -292,7 +292,7 @@ def provisionPV(pvcnamespace, pvcname):
         labelStorageClassName=LABEL_STORAGECLASSNAME
     )
     cmd = ["kubectl", "apply", "-f", "-"]
-    subprocess.check_output(cmd, input=s.encode())
+    subprocess.check_call(cmd, input=s.encode())
     logging.info("PV created successfully "+pvname+", wait for binding to occur")
 
 ################################################################################
