@@ -156,5 +156,5 @@ spec:
   storageClassName: sc01
 ```
 
-When the `init-perms` annotation is `true`, the controller will attempty to mount the NFS share temporarily and create the subdirectories `/subpath/default-myclaim`. It will use the values from `uid`, `gid` and `mode` to adjust directory owner and permissions. If this initialization step fails, the PV will not be created. This allows PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
+When the `init-perms` annotation is `true`, the controller will attempt to mount the NFS share temporarily and create the subdirectories `/subpath/default-myclaim`. It will use the values from `uid`, `gid` and `mode` to adjust directory owner and permissions. If this initialization step fails, the PV will not be created. This allows PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
 
