@@ -28,7 +28,7 @@ parameters:
 reclaimPolicy: Delete
 ```
 
-Now, with `sc01` defined, you can create Persistent Volume Claims using that StorageClass.
+Now, with `sc01` defined, you can create PersistentVolumeClaims using that use your StorageClass.
 
 ```yaml
 apiVersion: v1
@@ -46,7 +46,7 @@ spec:
   storageClassName: sc01
 ```
 
-The controller will pick up on that claim and create the corresponding Persistent Volume, which would look similar to:
+The controller will pick up on that claim and create the corresponding PersistentVolume, which would look similar to:
 
 ```yaml
 apiVersion: v1
@@ -86,7 +86,7 @@ The StorageClass parameters may be quite self explanatory, but here is a rundown
 
 ```yaml
 parameters:
-  ## A prefix that should be used on all PV names created from this StorageClass.
+  ## A prefix that should be placed on all PV names created from this StorageClass.
   ## Optional
   ## Default: empty
   pvNamePrefix: ""
@@ -101,7 +101,7 @@ parameters:
 
   ## A subdirectory inside the share
   ## Optional
-  ## Default: empty
+  ## Default: /
   path: /subpath
 
   ## Namespace to which this StorageClass should be restricted to.
@@ -118,7 +118,7 @@ parameters:
   keepPv: "false"
 ```
 
-The controller uses the StorageClass parameters and the PVC metadata to fully provision the NFS volume. To keep storage access unique inside the same remote NFS share, PV will point to:
+The controller uses the StorageClass parameters and the PVC metadata to fully provision the NFS volume. It is possible to use several PersistentVolumes on the same remote NFS share without conflict. To keep storage access unique inside the same remote NFS share, PV will point to:
 
 ```text
 <REMOTE_SERVER>:<SHARE>+<PATH>+<PVC_NAMESPACE>-<PVC_NAME>
