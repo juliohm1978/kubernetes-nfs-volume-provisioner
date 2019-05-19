@@ -121,7 +121,7 @@ def initPVData(pvc, sc):
         if ANNOTATION_INITPERMS in pvc["metadata"]["annotations"] and pvc["metadata"]["annotations"][ANNOTATION_INITPERMS] == "false":
             return
 
-        pvcname = pvc["metadata"]["namespace"] + "-" + pvc["metadata"]["name"]
+        pvname = pvc["metadata"]["namespace"] + "-" + pvc["metadata"]["name"]
         server = sc["parameters"]["server"]
         share  = sc["parameters"]["share"]
         path   = "/"
@@ -130,7 +130,7 @@ def initPVData(pvc, sc):
 
         remote = server + ":" + share
         dirlocal  = "/tmp/"+randomString(18)
-        dirlocalfull = dirlocal + path + "/" + pvcname
+        dirlocalfull = dirlocal + path + "/" + pvname
 
         # create temporary dir
         cmd = ["mkdir", "-p", dirlocal]
@@ -140,10 +140,10 @@ def initPVData(pvc, sc):
             # mount the remote share temporarily
             cmd = ["mount", "-t", "nfs", remote, dirlocal]
             subprocess.check_call(cmd)
-            logging.debug("Temporary mount for "+pvcname+": "+remote+" > "+dirlocal)
+            logging.debug("Temporary mount for "+pvname+": "+remote+" > "+dirlocal)
 
             try:
-                # create a subdirectory derived from pvcname
+                # create a subdirectory derived from pvname
                 cmd = ["mkdir", "-p", dirlocalfull]
                 subprocess.check_call(cmd)
 
@@ -151,24 +151,24 @@ def initPVData(pvc, sc):
                 if ANNOTATION_UID in pvc["metadata"]["annotations"]:
                     cmd = ["chown", pvc["metadata"]["annotations"][ANNOTATION_UID], dirlocalfull]
                     subprocess.check_call(cmd)
-                    logging.debug("User permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
+                    logging.debug("User permissions adjusted for "+pvname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
 
                 # adjust group permissions
                 if ANNOTATION_GID in pvc["metadata"]["annotations"]:
                     cmd = ["chgrp", pvc["metadata"]["annotations"][ANNOTATION_GID], dirlocalfull]
                     subprocess.check_call(cmd)
-                    logging.debug("Group permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
+                    logging.debug("Group permissions adjusted for "+pvname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
 
                 # adjust group permissions
                 if ANNOTATION_MODE in pvc["metadata"]["annotations"]:
                     cmd = ["chmod", pvc["metadata"]["annotations"][ANNOTATION_MODE], dirlocalfull]
                     subprocess.check_call(cmd)
-                    logging.debug("File permissions adjusted for "+pvcname+": "+pvc["metadata"]["annotations"][ANNOTATION_MODE])
+                    logging.debug("File permissions adjusted for "+pvname+": "+pvc["metadata"]["annotations"][ANNOTATION_MODE])
             finally:
                 # umount
                 cmd = ["umount", dirlocal]
                 subprocess.check_call(cmd)
-                logging.debug("Initialization complete for "+pvcname+": "+dirlocal+" umounted")
+                logging.debug("Initialization complete for "+pvname+": "+dirlocal+" umounted")
         finally:
             # remove temporary dir
             cmd = ["rm", "-rf", dirlocal]
@@ -186,7 +186,7 @@ def provisionPV(pvcnamespace, pvcname):
     s = subprocess.check_output(cmd, universal_newlines=True)
     pvc = json.loads(s)
     if not "storageClassName" in pvc["spec"]:
-        logging.warning("PVC "+pvcnamespace+"/"+pvname+" does not have a storageClassName")
+        logging.warning("PVC "+pvcnamespace+"/"+pvcname+" does not have a storageClassName")
         return
     scname = pvc["spec"]["storageClassName"]
     sc = findStorageClass(scname)
