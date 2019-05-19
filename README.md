@@ -1,6 +1,6 @@
 # Kubernetes NFS Volume Provisioner
 
-## UNDER CONSTRUCTION - TODO:
+## UNDER CONSTRUCTION - TODO
 
 * Full documentation
 * Load kubectl config in cluster
