@@ -7,6 +7,7 @@ import string
 import subprocess
 import json
 import jinja2
+import uuid
 
 PROVISIONER_NAME     = "nfs-provisioner.juliohm.com.br"
 ANNOTATION_INITPERMS = "nvs-provisioner.juliohm.com.br/init-perms"
@@ -16,13 +17,6 @@ ANNOTATION_MODE      = "nvs-provisioner.juliohm.com.br/mode"
 ANNOTATION_READONLY  = "nvs-provisioner.juliohm.com.br/read-only"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
-################################################################################
-## Generate a random string of a given size
-################################################################################
-def gen_random_string(size):
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
-
 
 ################################################################################
 ## Search for a storage class
@@ -47,6 +41,17 @@ def findPersistentVolume(pvname):
     except subprocess.CalledProcessError as err:
         logging.debug(err, exc_info=True)
         pass
+
+################################################################################
+## PVC Patch Template
+################################################################################
+def pvcPatchTemplate():
+    return jinja2.Template("""
+spec:
+  volumeName: {{ pvname }}
+status:
+  phase: Bound
+""")
 
 ################################################################################
 ## PV Template
@@ -74,6 +79,14 @@ spec:
     path: {{ path }}
     server: {{ server }}
     readOnly: {{ readOnly }}
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: {{ pvcName }}
+    namespace: {{ pvcNamespace }}
+    uid: {{ uid }}
+status:
+  phase: Bound
 """)
 
 ################################################################################
@@ -148,6 +161,14 @@ def provisionPV(pvcnamespace, pvcname):
             logging.debug("PV "+pvname+" already exists, ignoring event")
             return
 
+        # pvcpatch = '{ "spec": { "volumeName": "'+pvname+'" } }'
+        s = pvcPatchTemplate().render(pvname=pvname)
+        cmd = ["kubectl", "patch", "pvc", "--namespace", pvcnamespace, pvcname, "--patch", s]
+        logging.info("PVC patched "+pvcnamespace+"/"+pvcname+" with volumeName="+pvname)
+        subprocess.check_output(cmd)
+
+        pvcuid = pvc["metadata"]["uid"]
+
         s = pvTemplate().render(
             name=pvname,
             path=nfsshare+nfspath+"/"+pvname,
@@ -158,13 +179,9 @@ def provisionPV(pvcnamespace, pvcname):
             storage=storage,
             storageClassName=scname,
             pvcName=pvcname,
-            pvcNamespace=pvcnamespace
-            )
-
-        pvcpatch = '{ "spec": { "volumeName": "'+pvname+'" } }'
-        cmd = ["kubectl", "patch", "pvc", "--namespace", pvcnamespace, pvcname, "--patch", pvcpatch]
-        logging.info("PVC patched "+pvcnamespace+"/"+pvcname+" with volumeName="+pvname)
-        subprocess.check_output(cmd)
+            pvcNamespace=pvcnamespace,
+            uid=pvcuid
+        )
 
         cmd = ["kubectl", "apply", "-f", "-"]
         subprocess.check_output(cmd, input=s.encode())
