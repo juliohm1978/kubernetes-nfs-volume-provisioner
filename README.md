@@ -121,7 +121,7 @@ parameters:
 The controller uses the StorageClass parameters and the PVC metadata to fully provision the NFS volume. It is possible to use several PersistentVolumes on the same remote NFS share without conflict. To keep storage access unique, a PV will point exactly to:
 
 ```text
-<REMOTE_SERVER> : <SHARE> + <PATH> + <PVC_NAMESPACE> - <PVC_NAME>
+<REMOTE_SERVER> : <SHARE> + [PATH] + <PVC_NAMESPACE-PVC_NAME>
 ```
 
 In the above example, the PV provisioned points to:
