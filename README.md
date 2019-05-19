@@ -8,7 +8,7 @@ Installation instructions
 
 ## User guide
 
-As expected by a dynamic provisioning tool, you will need to declare `StorageClass` objects, which provide a number of choices on how NFS volumes will be provisioned. You can declare as many StorageClasses as you want with different parameters. All they need in common the field `provisioner: nfs-provisioner.juliohm.com.br`.
+As expected by a dynamic provisioning tool, you will need to declare `StorageClass` objects, which provide a number of values on how NFS volumes will be provisioned. You can declare as many StorageClasses as you want with different parameters. All they need in common the field `provisioner: nfs-provisioner.juliohm.com.br`.
 
 Here's a full example:
 
@@ -156,5 +156,6 @@ spec:
   storageClassName: sc01
 ```
 
-When the `init-perms` annotation is `true`, the controller will attempt to mount the NFS share temporarily and create the subdirectories `/subpath/default-myclaim`. It will use the values from `uid`, `gid` and `mode` to adjust directory owner and permissions. If this initialization step fails, the PV will not be created. This allows PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
+When the `init-perms` annotation is `true`, the controller will attempt to mount the NFS share temporarily and create the subdirectories `/subpath/default-myclaim`. It will use the values from `uid`, `gid` and `mode` to adjust directory owner and permissions. If this initialization step fails, the PV will not be created.
 
+These annotations allow PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
