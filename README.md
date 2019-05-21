@@ -3,8 +3,6 @@
 ## UNDER CONSTRUCTION - TODO
 
 * Full documentation
-* Load kubectl config in cluster
-* Docker image
 * Installation Yamls and instructions
 
 ## Introduction
