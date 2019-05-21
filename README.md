@@ -168,3 +168,14 @@ spec:
 When the `init-perms` annotation is `true`, the controller will attempt to mount the NFS share temporarily and create the subdirectories `/subpath/default-myclaim`. It will use the values from `uid`, `gid` and `mode` to adjust directory owner and permissions. If this initialization step fails, the PV will not be created.
 
 These annotations allow PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
+
+## Controller command line options
+
+The controller itself accepts a few command line options. They allow debugging information to be shown and some options to be defined globally.
+
+| Option          | Description                                                                                                                                                               |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--disablePvInit` | Globally disable PV initialization. When disabled, the controller will not attempt to mount the NFS share to adjust directories and permissions before delivering the PV. |
+| `--namespace`     | Restrict all StorageClasses to one particular namespace. If this value is defined, The `namespace` parameter in all StorageClasses will be ignored.                       |
+| `--interval`      | Polling interval, in seconds, on the Kubernetes API. Default 30.                                                                                                          |
+| `--debugLevel`    | Adjust log level displayed on stdout. Possible values: error, warning, info, debug. Default: info.                                                                        |
