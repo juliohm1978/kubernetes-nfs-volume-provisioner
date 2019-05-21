@@ -21,6 +21,9 @@ spec:
           name: k8s-nfs-provisioner
           args:
             - --interval=5
+          securityContext:
+            capabilities:
+              add: ["SYS_ADMIN"]
           resources:
             requests:
               cpu: 500m
