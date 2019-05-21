@@ -255,15 +255,6 @@ def provisionPV(pvcnamespace, pvcname):
     
     pvexists = findPersistentVolume(pvname)
     if pvexists:
-        if not "labels" in pvexists["metadata"]:
-            logging.info("PV "+pvname+" already exists. No relevant labels found. Ignoring event")
-            return
-        if not LABEL_STORAGECLASSNAME in pvexists["metadata"]["labels"]:
-            logging.info("PV "+pvname+" already exists. storageClassName label not found. Ignoring event")
-            return
-        if pvexists["metadata"]["labels"][LABEL_STORAGECLASSNAME] != scname:
-            logging.info("PV "+pvname+" already exists. PV StorageClass "+pvexists["metadata"]["labels"][LABEL_STORAGECLASSNAME]+" does not match "+scname+". Ignoring event")
-            return
         status = pvexists["status"]["phase"].upper()
         logging.info("PV "+pvname+" already exists with status "+status+". Ignoring event")
         return
