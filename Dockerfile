@@ -4,7 +4,7 @@ ENV KUBECTL_VERSION=v1.14.1
 
 RUN apt-get update
 
-RUN apt-get install -y python3-pip python3-setuptools
+RUN apt-get install -y python3-pip python3-setuptools mount nfs-common
 
 RUN pip3 install jinja2
 
