@@ -173,9 +173,9 @@ These annotations allow PVs to be fully provisioned, making sure its volume dire
 
 The controller itself accepts a few command line options. They allow debugging information to be shown and some options to be defined globally.
 
-| Option          | Description                                                                                                                                                               |
-|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Option | Description |
+|---|---|
 | `--disablePvInit` | Globally disable PV initialization. When disabled, the controller will not attempt to mount the NFS share to adjust directories and permissions before delivering the PV. |
-| `--namespace`     | Restrict all StorageClasses to one particular namespace. If this value is defined, The `namespace` parameter in all StorageClasses will be ignored.                       |
-| `--interval`      | Polling interval, in seconds, on the Kubernetes API. Default 30.                                                                                                          |
-| `--debugLevel`    | Adjust log level displayed on stdout. Possible values: error, warning, info, debug. Default: info.                                                                        |
+| `--namespace`     | Restrict all StorageClasses to one particular namespace. If this value is defined, The `namespace` parameter in all StorageClasses will be ignored. |
+| `--interval`      | Polling interval, in seconds, on the Kubernetes API. Default 30. |
+| `--debugLevel`    | Adjust log level displayed on stdout. Possible values: error, warning, info, debug. Default: info. |
