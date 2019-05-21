@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: k8s-nfs-provisioner
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  terminationGracePeriod: 5
+  selector:
+    matchLabels:
+      app: k8s-nfs-provisioner
+  template:
+    metadata:
+      labels:
+        app: k8s-nfs-provisioner
+    spec:
+      serviceAccount: k8s-nfs-provisioner
+      containers:
+        - image: juliohm/k8s-nfs-provisioner
+          imagePullPolicy: Always
+          name: k8s-nfs-provisioner
+          args:
+            - --interval=5
+          resources:
+            requests:
+              cpu: 500m
+              memory: 128Mi
+            limits:
+              cpu: 1
+              memory: 500Mi
+
