@@ -96,12 +96,6 @@ spec:
     path: {{ path }}
     server: {{ server }}
     readOnly: {{ readOnly }}
-  claimRef:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    name: {{ pvcName }}
-    namespace: {{ pvcNamespace }}
-    uid: {{ uid }}
 status:
   phase: Bound
 """)
@@ -261,7 +255,17 @@ def provisionPV(pvcnamespace, pvcname):
     
     pvexists = findPersistentVolume(pvname)
     if pvexists:
-        logging.debug("PV "+pvname+" already exists, ignoring event")
+        if not "labels" in pvexists["metadata"]:
+            logging.info("PV "+pvname+" already exists. No relevant labels found. Ignoring event")
+            return
+        if not LABEL_STORAGECLASSNAME in pvexists["metadata"]["labels"]:
+            logging.info("PV "+pvname+" already exists. storageClassName label not found. Ignoring event")
+            return
+        if pvexists["metadata"]["labels"][LABEL_STORAGECLASSNAME] != scname:
+            logging.info("PV "+pvname+" already exists. PV StorageClass "+pvexists["metadata"]["labels"][LABEL_STORAGECLASSNAME]+" does not match "+scname+". Ignoring event")
+            return
+        status = pvexists["status"]["phase"].upper()
+        logging.info("PV "+pvname+" already exists with status "+status+". Ignoring event")
         return
 
     ## Try to create subdirectories inside NFS share and adjust permissions
@@ -286,13 +290,12 @@ def provisionPV(pvcnamespace, pvcname):
         storageClassName=scname,
         pvcName=pvcname,
         pvcNamespace=pvcnamespace,
-        uid=pvc["metadata"]["uid"],
         labelPvcName=LABEL_PVCNAME,
         labelPvcNameSpace=LABEL_PVCNAMESPACE,
         labelStorageClassName=LABEL_STORAGECLASSNAME
     )
     cmd = ["kubectl", "apply", "-f", "-"]
-    subprocess.check_call(cmd, input=s.encode())
+    subprocess.check_output(cmd, input=s.encode())
     logging.info("PV created successfully "+pvname+", wait for binding to occur")
 
 ################################################################################
@@ -368,9 +371,7 @@ def removePV(pvname):
         return
 
     keeppv = "false"
-    if "keepPv" in sc["parameters"]:
-        keeppv = sc["parameters"]["keepPv"]
-    if keeppv == "true":
+    if "keepPv" in sc["parameters"] and sc["parameters"]["keepPv"] == "true":
         return
 
     logging.info("Found PV "+pvname+" in state Released")
@@ -389,11 +390,7 @@ def removePV(pvname):
 ################################################################################
 logging.info("WELCOME: nfs-volume-provisioner, juliohm.com.br")
 logging.info("Watching for PVCs")
-
-cmd = ["kubectl", "get", "pvc", "--no-headers", "--watch"]
-proc = subprocess.Popen(cmd,stdout=subprocess.PIPE)
 while True:
-    proc.stdout.readline()
     try:
         # Look for pending PVCs
         cmd = ["kubectl", "get", "pvc", "--all-namespaces", "-ojson"]
@@ -403,7 +400,7 @@ while True:
             try:
                 pvcnamespace = item["metadata"]["namespace"]
                 pvcname      = item["metadata"]["name"]
-                pvcstatus    = item["status"]["phase"]
+                pvcstatus    = item["status"]["phase"].upper()
                 if pvcstatus.upper() == "PENDING":
                     provisionPV(pvcnamespace, pvcname)
             except Exception as err:
@@ -416,7 +413,7 @@ while True:
         for item in pvc["items"]:
             try:
                 pvname   = item["metadata"]["name"]
-                pvstatus = item["status"]["phase"]
+                pvstatus = item["status"]["phase"].upper()
                 if pvstatus=="RELEASED" or pvstatus=="FAILED":
                     removePV(pvname)
             except Exception as err:
@@ -426,6 +423,4 @@ while True:
         logging.error("Unable to check for PVCs")
         logging.error(err, exc_info=True)
 
-    rc = proc.poll()
-    if rc:
-        sys.exit(rc)
+    time.sleep(args.interval)
