@@ -396,39 +396,27 @@ while True:
     proc.stdout.readline()
     try:
         # Look for pending PVCs
-        cmd = ["kubectl", "get", "pvc", "--all-namespaces", "--no-headers"]
-        lines = subprocess.check_output(cmd, universal_newlines=True)
-        lines = lines.split("\n")
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+        cmd = ["kubectl", "get", "pvc", "--all-namespaces", "-ojson"]
+        s = subprocess.check_output(cmd, universal_newlines=True)
+        pvc = json.loads(s)
+        for item in pvc["items"]:
             try:
-                logging.debug("LINE PVC: "+str(line))
-                line = line.split(" ")
-                logging.debug("LINE PVC: "+str(line))
-                pvcnamespace = line[0]
-                pvcname      = line[3]
-                pvcstatus    = line[6]
+                pvcnamespace = item["metadata"]["namespace"]
+                pvcname      = item["metadata"]["name"]
+                pvcstatus    = item["status"]["phase"]
                 if pvcstatus.upper() == "PENDING":
                     provisionPV(pvcnamespace, pvcname)
             except Exception as err:
                 logging.error(err, exc_info=True)
 
         # Look for released PVs
-        cmd = ["kubectl", "get", "pv", "--no-headers"]
-        lines = subprocess.check_output(cmd, universal_newlines=True)
-        lines = lines.split("\n")
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+        cmd = ["kubectl", "get", "pv", "-ojson"]
+        s = subprocess.check_output(cmd, universal_newlines=True)
+        pvc = json.loads(s)
+        for item in pvc["items"]:
             try:
-                logging.debug("LINE PV: "+str(line))
-                line = line.split(" ")
-                logging.debug("LINE PV: "+str(line))
-                pvname = line[0]
-                pvstatus = line[12].upper()
+                pvname   = item["metadata"]["name"]
+                pvstatus = item["status"]["phase"]
                 if pvstatus=="RELEASED" or pvstatus=="FAILED":
                     removePV(pvname)
             except Exception as err:
