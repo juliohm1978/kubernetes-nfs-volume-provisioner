@@ -331,7 +331,7 @@ def deletePVData(sc, pvname, reclaimPolicy):
             subprocess.check_call(cmd)
 
     except Exception as err:
-        logging.error("Failed to initialize data inside NFS share: "+str(err))
+        logging.error("Failed to remove data from NFS share: "+str(err))
         raise err
 
 
