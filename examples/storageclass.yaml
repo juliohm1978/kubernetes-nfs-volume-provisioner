@@ -5,7 +5,7 @@ metadata:
 provisioner: nfs-provisioner.juliohm.com.br
 parameters:
   pvNamePrefix: ""
-  server: 10.10.10.3
+  server: 192.168.100.58
   share: /myshare
   # path: /subpath
   # namespace: some-namespace
