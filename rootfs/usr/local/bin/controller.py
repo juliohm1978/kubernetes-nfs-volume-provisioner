@@ -255,7 +255,7 @@ def provisionPV(pvcnamespace, pvcname):
     
     pvexists = findPersistentVolume(pvname)
     if pvexists:
-        logging.info("PV "+pvname+" already exists with status "+pvexists["status"]["phase"]+". Ignoring event")
+        logging.info("PV "+pvname+" already exists. Ignoring event")
         return
 
     ## Try to create subdirectories inside NFS share and adjust permissions
