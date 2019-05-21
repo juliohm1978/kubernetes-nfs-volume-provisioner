@@ -10,7 +10,6 @@ import jinja2
 import time
 import controllerargs
 
-
 args = controllerargs.p.parse_args()
 
 PROVISIONER_NAME     = "nfs-provisioner.juliohm.com.br"
