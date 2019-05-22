@@ -12,6 +12,10 @@ import controllerargs
 
 args = controllerargs.p.parse_args()
 
+nfsversion = "nfs"
+if args.nfsVersion == "4":
+    nfsversion = "nfs4"
+
 PROVISIONER_NAME     = "nfs-provisioner.juliohm.com.br"
 ANNOTATION_INITPERMS = "nvs-provisioner.juliohm.com.br/init-perms"
 ANNOTATION_UID       = "nvs-provisioner.juliohm.com.br/uid"
@@ -141,7 +145,7 @@ def initPVData(pvc, sc):
 
         try:
             # mount the remote share temporarily
-            cmd = ["mount", "-t", "nfs", remote, dirlocal]
+            cmd = ["mount", "-t", nfsversion, remote, dirlocal]
             subprocess.check_call(cmd)
             logging.debug("Temporary mount for "+pvname+": "+remote+" > "+dirlocal)
 
@@ -324,7 +328,7 @@ def deletePVData(sc, pvname, reclaimPolicy):
 
         try:
             # mount the remote share temporarily
-            cmd = ["mount", "-t", "nfs", remote, dirlocal]
+            cmd = ["mount", "-t", nfsversion, remote, dirlocal]
             subprocess.check_call(cmd)
             logging.debug("Mount "+pvname+": "+remote+" > "+dirlocal)
             try:
