@@ -43,6 +43,12 @@ Now, use the chart `juliohm1978/k8s-nfs-provisioner`.
 helm upgrade --install nfsprov juliohm1978/k8s-nfs-provisioner
 ```
 
+Uninstall should be a straight forward `helm del`.
+
+```shell
+helm del --purge nfsprov
+```
+
 To further customize your deployment, take a look at the chart [`values.yaml`](https://github.com/juliohm1978/charts/tree/master/charts/k8s-nfs-provisioner) for details.
 
 ## How to use it
