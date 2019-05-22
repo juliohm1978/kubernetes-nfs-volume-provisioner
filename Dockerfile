@@ -12,4 +12,6 @@ RUN chmod +x /usr/local/bin/kubectl
 
 COPY rootfs /
 
+STOPSIGNAL 9
+
 ENTRYPOINT ["/usr/local/bin/controller.py"]
