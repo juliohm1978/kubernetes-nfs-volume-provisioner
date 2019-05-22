@@ -2,21 +2,25 @@
 
 ## Introduction
 
-A somewhat flexible Kubernetes controller that can provision NFS Persistent Volumes in a consistent and predictable way. It relies on the `kubectl` binary as a robust API client to watch for PVC events and react in order to provision Persistent Volumes accordingly.
+A somewhat flexible Kubernetes controller that can provision NFS Persistent Volumes in a consistent and predictable way. It relies on the `kubectl` binary as a robust API client to watch for PersistentVolumeClaim events and react in order to provision PersistentVolumes accordingly.
 
 ## Installation
 
 Before you can use this controller, please note a few things.
 
-### Requirements
+### Requirements and Considerations
 
 This controller **does not** provide an NFS server to your cluster. You will need at least one NFS service accessible in your network, and this controller will not give you that.
 
-**IMPORTANT:** If you wish to use the PV data initalization feature, the NFS server should be available to the Pod running this controller. In order to prepare directories and permissions inside the NFS share, the controller Pod needs be able to mount it before creating the PV.
+If you wish to use the PV Data Initalization feature (details below), the NFS servers used in your StorageClasses should be available to the Pod running this controller. In order to prepare directories and permissions inside the NFS share, the controller needs be able to mount it before creating the PersistentVolume.
+
+**IMPORTANT:** This also means the controller Pod must run with `privileged: true` so it can perform `mount -t nfs` inside the cluster.
+
+In some cases, privileged containers are not allowed in the cluster. You can still run the controller without privilege escalation and disable PV initalization with command line arguments to the controller. Without this feature, directory and permissions inside the NFS share cannot be adjusted automatically, but the controller can still create PersistentVolumes assuming those steps will be done manually.
 
 ### Install using kubectl
 
-If you wish to quickly install using `kubectl`, you can use the files included in the `installation` directory. The easiest way is to call the `install` or `uninstall` targets in the `Makefile` provided. This will create all objects in the `default` namespace, and provides a way to get the controller running for a quick test.
+You can quickly install using `kubectl`, you can use the files included in the `installation` directory. The easiest way is to call the `install` or `uninstall` targets in the `Makefile` provided. This will create all objects in the `default` namespace, and provides a way to get the controller running for a quick test.
 
 ```shell
 # install
@@ -51,7 +55,7 @@ To further customize your deployment, take a look at the chart [`values.yaml`](h
 
 ## How to use it
 
-Once installed, you will be able to create `StorageClass` objects in you cluster, which provide a number of values on how NFS volumes will be provisioned. You can declare as many StorageClasses as you want with different parameters. All they need in common the field `provisioner: nfs-provisioner.juliohm.com.br`.
+Once installed, you should create `StorageClass` objects in you cluster providing a number of values on how NFS volumes will be provisioned. You can declare as many StorageClasses as you want with different parameters. All they need in common the field `provisioner: nfs-provisioner.juliohm.com.br`.
 
 Here's a full example:
 
@@ -71,7 +75,7 @@ parameters:
 reclaimPolicy: Delete
 ```
 
-Now, with `sc01` defined, you can create PersistentVolumeClaims using that use your StorageClass.
+Now, with `sc01` defined, you can create PersistentVolumeClaims using your StorageClass.
 
 ```yaml
 apiVersion: v1
@@ -153,9 +157,9 @@ parameters:
   ## Default: empty (meaning, react to all PVC events in the cluster)
   namespace: some-namespace
 
-  ## If "true", the PV object will not be deleted when the PVC is deleted.
+  ## If "true", the PV object will not be removed when the PVC is deleted.
   ## NOTE: Reclaim policies from this StorageClass will be applied to all PVs
-  ## removed from the cluster: REATAIN or DELETE.
+  ## removed from the cluster: RETAIN or DELETE.
   ## Optional
   ## Default: false
   keepPv: "false"
@@ -175,9 +179,9 @@ In the above example, the PV provisioned points to:
 
 As expected by Kubernetes, the `/subpath/default-myclaim` subdirectories **SHOULD** exist in the remote NFS share. Otherwise, the volume mount inside a Pod will fail.
 
-To make your life easier, the controller allows further configuration as annotations in the PVC. This configuration provides enough information so the controller can automatically create these remote subdirectories before delivering the PV.
+## PV Data Initialization
 
-Take the following PVC declaration, for example:
+To make your life easier, the controller can automatically create that unique path inside the NFS share and adjust owner and permissions before it delivers the PersistentVolume. This can be configured with annotations in the PVC.
 
 ```yaml
 apiVersion: v1
@@ -202,6 +206,8 @@ spec:
 When the `init-perms` annotation is `true`, the controller will attempt to mount the NFS share temporarily and create the subdirectories `/subpath/default-myclaim`. It will use the values from `uid`, `gid` and `mode` to adjust directory owner and permissions. If this initialization step fails, the PV will not be created.
 
 These annotations allow PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
+
+**IMPORTANT**: In order for this feature to work, the controller Pod needs to run with `privileged: true`. If privileged Pods are not allowed in your cluster, you can safely disable the privilege escalation and run the controller with this feature disabled. For that, take a look at the [helm chart values.yaml](https://github.com/juliohm1978/charts/blob/master/charts/k8s-nfs-provisioner/values.yaml) and change the values of `privileged` and `args.disablePvInit` for your deployment.
 
 ## Controller command line options
 
