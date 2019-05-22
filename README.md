@@ -10,11 +10,13 @@ A somewhat flexible Kubernetes controller that can provision NFS Persistent Volu
 
 ## Installation
 
-Before you can use this controller, you should note a few things.
+Before you can use this controller, please note a few things.
 
 ### Requirements
 
 This controller **does not** provide an NFS server to your cluster. You will need at least one NFS service accessible in your network, and this controller will not give you that.
+
+**IMPORTANT:** If you wish to use the PV data initalization feature, the NFS server should be available to the Pod running this controller. In order to prepare directories and permissions inside the NFS share, the controller Pod needs be able to mount it before creating the PV.
 
 ### Install using kubectl
 
