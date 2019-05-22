@@ -9,6 +9,13 @@ spec:
   selector:
     matchLabels:
       app: k8s-nfs-provisioner
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 100%
+      pre: {}
+      post: {}
   template:
     metadata:
       labels:
@@ -21,9 +28,9 @@ spec:
           name: k8s-nfs-provisioner
           args:
             - --interval=5
+            - --debugLevel=debug
           securityContext:
-            capabilities:
-              add: ["SYS_ADMIN"]
+            privileged: true
           resources:
             requests:
               cpu: 500m

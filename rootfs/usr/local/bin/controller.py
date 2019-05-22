@@ -90,6 +90,12 @@ spec:
   {% for am in accessModes %}
   - {{ am }}
   {% endfor %}
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: {{ pvcName }}
+    namespace: {{ pvcNamespace }}
+    uid: {{ pvcUID }}
   persistentVolumeReclaimPolicy: {{ reclaimPolicy }}
   nfs: 
     path: {{ path }}
@@ -124,6 +130,10 @@ def initPVData(pvc, sc):
         remote = server + ":" + share
         dirlocal  = "/tmp/"+randomString(18)
         dirlocalfull = dirlocal + path + "/" + pvname
+
+        if ".." in remote:
+            logging.error("Invalid path "+remote+". Refusing to initialize PV data")
+            return
 
         # create temporary dir
         cmd = ["mkdir", "-p", dirlocal]
@@ -281,7 +291,8 @@ def provisionPV(pvcnamespace, pvcname):
         pvcNamespace=pvcnamespace,
         labelPvcName=LABEL_PVCNAME,
         labelPvcNameSpace=LABEL_PVCNAMESPACE,
-        labelStorageClassName=LABEL_STORAGECLASSNAME
+        labelStorageClassName=LABEL_STORAGECLASSNAME,
+        pvcUID=pvc["metadata"]["uid"]
     )
     cmd = ["kubectl", "apply", "-f", "-"]
     subprocess.check_output(cmd, input=s.encode())
@@ -307,8 +318,8 @@ def deletePVData(sc, pvname, reclaimPolicy):
         cmd = ["mkdir", "-p", dirlocal]
         subprocess.check_call(cmd)
 
-        if ".." in dirlocalfull:
-            logging.error("Invalid path "+dirlocalfull)
+        if ".." in remote:
+            logging.error("Invalid path "+remote+". Refusing to initialize PV data")
             return
 
         try:
