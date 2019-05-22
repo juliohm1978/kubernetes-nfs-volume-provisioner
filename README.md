@@ -32,7 +32,7 @@ make unisntall
 
 ### Install using helm
 
-You can also use a helm chart created for this project. It allows a more unique deployment and allow you to use a namespace other than 'default`. The chart is hosted in [one of my Github repositories](https://github.com/juliohm1978/charts). First, add the repo to your local helm installation.
+You can also use a helm chart created for this project. It allows a more unique deployment and allow you to use a namespace other than `default`. The chart is hosted in [one of my Github repositories](https://github.com/juliohm1978/charts). First, add the repo to your local helm installation.
 
 ```shell
 helm repo add juliohm1978 https://raw.githubusercontent.com/juliohm1978/charts/master/index
