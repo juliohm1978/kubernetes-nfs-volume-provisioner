@@ -20,7 +20,7 @@ In some cases, privileged containers are not allowed in the cluster. You can sti
 
 ### Install using kubectl
 
-You can quickly install using `kubectl`, you can use the files included in the `installation` directory. The easiest way is to call the `install` or `uninstall` targets in the `Makefile` provided. This will create all objects in the `default` namespace, and provides a way to get the controller running for a quick test.
+For a quick local test, you install using `kubectl`. Use the files included in the `installation` directory. The easiest way is to call the `install` or `uninstall` targets in the `Makefile` provided. This will create all objects in the `default` namespace, and provides a way to get the controller running for a quick test.
 
 ```shell
 # install
