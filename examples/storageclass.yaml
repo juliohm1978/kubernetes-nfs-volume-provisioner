@@ -6,9 +6,9 @@ provisioner: nfs-provisioner.juliohm.com.br
 parameters:
   pvNamePrefix: ""
   server: 192.168.100.58
-  share: /myshare/../../../../../../
+  share: /myshare
   # path: /subpath
   # namespace: some-namespace
   # keepPv: "false"
-reclaimPolicy: Delete
+reclaimPolicy: Retain
 volumeBindingMode: Immediate
