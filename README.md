@@ -1,9 +1,5 @@
 # Kubernetes NFS Volume Provisioner
 
-## UNDER CONSTRUCTION - TODO
-
-* Full documentation
-
 ## Introduction
 
 A somewhat flexible Kubernetes controller that can provision NFS Persistent Volumes in a consistent and predictable way. It relies on the `kubectl` binary as a robust API client to watch for PVC events and react in order to provision Persistent Volumes accordingly.
