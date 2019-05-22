@@ -30,7 +30,7 @@ make install
 make unisntall
 ```
 
-### Install using helm chart
+### Install using helm
 
 You can also use a helm chart created for this project. The chart is hosted in [one of my Github repositories](https://github.com/juliohm1978/charts). First, add the repo to your local helm installation.
 
