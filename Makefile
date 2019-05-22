@@ -10,9 +10,7 @@ push: build
 	docker push $(IMAGE):$(TAG)
 
 install:
-	kubectl apply -f installation/serviceaccount.yaml
-	kubectl apply -f installation/deployment.yaml
+	kubectl apply -f installation
 
 uninstall:
-	kubectl delete -f installation/serviceaccount.yaml
-	kubectl delete -f installation/deployment.yaml
+	kubectl delete -f installation
