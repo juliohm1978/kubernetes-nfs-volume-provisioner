@@ -319,7 +319,7 @@ def deletePVData(sc, pvname, reclaimPolicy):
         subprocess.check_call(cmd)
 
         if ".." in remote:
-            logging.error("Invalid path "+remote+". Refusing to initialize PV data")
+            logging.error("Invalid path "+remote+". Refusing to delete PV data")
             return
 
         try:
