@@ -221,3 +221,10 @@ The controller itself accepts a few command line options. They allow debugging i
 | `--namespace`     | Restrict all StorageClasses to one particular namespace. If this value is defined, The `namespace` parameter in all StorageClasses will be ignored. |
 | `--interval`      | Polling interval, in seconds, on the Kubernetes API. Default 30. |
 | `--debugLevel`    | Adjust log level displayed on stdout. Possible values: error, warning, info, debug. Default: info. |
+| `--nfsVersion`    | Which version of NFS mount to use. Possible values: 3 or 4. Default: 4. |
+
+## Troubleshooting
+
+In case of problems, you can always check the output of the controller's Pod using kubectl directly. It should print any Exception stacktraces if there are any. I tried to include as many relevant log messages as possible to make sure you can see what exactly the controller is trying to do at any time. If you need to see more details, you can increase verbosity by adjusting the `debugLevel`, which is one of the controller's command line arguments.
+
+If the controller is having problems mounting the NFS share to provide PV Data Initialization, you might want to try changing the NFS version used by the controller using the `nfsVersion` argument.
