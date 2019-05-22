@@ -3,7 +3,6 @@
 ## UNDER CONSTRUCTION - TODO
 
 * Full documentation
-* Installation Yamls and instructions
 
 ## Introduction
 
@@ -11,11 +10,44 @@ A somewhat flexible Kubernetes controller that can provision NFS Persistent Volu
 
 ## Installation
 
-Installation instructions
+Before you can use this controller, you should note a few things.
 
-## User guide
+### Requirements
 
-As expected by a dynamic provisioning tool, you will need to declare `StorageClass` objects, which provide a number of values on how NFS volumes will be provisioned. You can declare as many StorageClasses as you want with different parameters. All they need in common the field `provisioner: nfs-provisioner.juliohm.com.br`.
+This controller **does not** provide an NFS server to your cluster. You will need at least one NFS service accessible in your network, and this controller will not give you that.
+
+### Install using kubectl
+
+If you wish to quickly install using `kubectl`, you can use the files included in the `installation` directory. The easiest way is to call the `install` or `uninstall` targets in the `Makefile` provided. This will create all objects in the `default` namespace, and provides a way to get the controller running for a quick test.
+
+```shell
+# install
+make install
+
+# remove
+make unisntall
+```
+
+### Install using helm chart
+
+You can also use a helm chart created for this project. The chart is hosted in [one of my Github repositories](https://github.com/juliohm1978/charts). First, add the repo to your local helm installation.
+
+```shell
+helm repo add juliohm1978 https://raw.githubusercontent.com/juliohm1978/charts/master/index
+helm repo up
+```
+
+Now, use the chart `juliohm1978/k8s-nfs-provisioner`.
+
+```shell
+helm upgrade --install nfsprov juliohm1978/k8s-nfs-provisioner
+```
+
+To further customize your deployment, take a look at the chart [`values.yaml`](https://github.com/juliohm1978/charts/tree/master/charts/k8s-nfs-provisioner) for details.
+
+## How to use it
+
+Once installed, you will be able to create `StorageClass` objects in you cluster, which provide a number of values on how NFS volumes will be provisioned. You can declare as many StorageClasses as you want with different parameters. All they need in common the field `provisioner: nfs-provisioner.juliohm.com.br`.
 
 Here's a full example:
 
