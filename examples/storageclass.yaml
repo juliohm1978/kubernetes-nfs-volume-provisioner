@@ -10,5 +10,5 @@ parameters:
   # path: /subpath
   # namespace: some-namespace
   # keepPv: "false"
-reclaimPolicy: Retain
+reclaimPolicy: Delete
 volumeBindingMode: Immediate
