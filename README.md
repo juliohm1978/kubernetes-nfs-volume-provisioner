@@ -165,6 +165,12 @@ parameters:
   ## Optional
   ## Default: false
   keepPv: "false"
+
+  ## Marks the readOnly flag in the PV NFS definition.
+  ## In the PersistentVolume, refers to the field .spec.nfs.readOnly
+  ## Optional
+  ## Default: false
+  readOnly: "false"
 ```
 
 The controller uses the StorageClass parameters and the PVC metadata to fully provision the NFS volume. It is possible to use several PersistentVolumes on the same remote NFS share without conflict. To keep storage access unique, a PV will point exactly to:

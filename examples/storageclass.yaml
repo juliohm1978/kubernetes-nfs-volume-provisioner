@@ -5,15 +5,13 @@ metadata:
 provisioner: nfs-provisioner.juliohm.com.br
 parameters:
   pvNamePrefix: ""
-  server: 192.168.100.58
+  server: 192.168.3.96
   share: /myshare
-  # path: /subpath
-  # namespace: some-namespace
-  # keepPv: "false"
+  path: /subpath
+  namespace: some-namespace
   readOnly: "true"
 mountOptions:
-  - "ro"
-  - "123"
+  - "loud"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 
@@ -27,8 +25,7 @@ parameters:
   pvNamePrefix: ""
   server: 192.168.100.58
   share: /myshare
-  # path: /subpath
   namespace: some-namespace
-  # keepPv: "false"
+  readOnly: "true"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate

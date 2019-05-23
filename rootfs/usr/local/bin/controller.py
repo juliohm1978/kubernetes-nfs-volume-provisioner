@@ -10,6 +10,7 @@ import jinja2
 import time
 import kubernetes
 import urllib3
+import os
 import controllerargs
 
 args = controllerargs.p.parse_args()
@@ -53,6 +54,8 @@ def random_string(size):
 ## in the StorageClass and PVC. Skip if any flags mark otherwise.
 ################################################################################
 def init_pv_data(pvc, sc):
+    pvcfullname = pvc.metadata.namespace + '-' + pvc.metadata.name
+    logging.info("PVC "+pvcfullname+". Initializing NFS share directories")
     try:
         if args.disablePvInit:
             return
@@ -60,19 +63,23 @@ def init_pv_data(pvc, sc):
         if ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
             return
 
-        pvname = pvc.metadata.namespace + "-" + pvc.metadata.name
-        server = sc.parameters["server"]
-        share  = sc.parameters["share"]
-        path   = "/"
-        if "path" in sc["parameters"]:
-            path = sc["parameters"]["path"]
+        pvname       = pvc.metadata.namespace + "-" + pvc.metadata.name
+        server       = sc.parameters["server"]
+        share        = sc.parameters["share"]
+        path         = "/"
+        mountOptions = ""
+        if "path" in sc.parameters:
+            path = sc.parameters["path"]
+        if sc.mount_options:
+            for o in sc.mount_options:
+                mountOptions += ","+o
 
         remote = server + ":" + share
         dirlocal  = "/tmp/"+random_string(18)
         dirlocalfull = dirlocal + path + "/" + pvname
 
         if ".." in remote:
-            logging.error("Invalid path "+remote+". Refusing to initialize PV data")
+            logging.error("PVC "+pvcfullname+". Invalid path "+remote+". Refusing to initialize PV data")
             return
 
         # create temporary dir
@@ -81,9 +88,16 @@ def init_pv_data(pvc, sc):
 
         try:
             # mount the remote share temporarily
-            cmd = ["mount", "-t", nfsversion, remote, dirlocal]
+            cmd = ["mount", "-t", nfsversion]
+            if mountOptions:
+                cmd.append("-o")
+                cmd.append(mountOptions)
+            cmd.append("-v")
+            cmd.append(remote)
+            cmd.append(dirlocal)
+            logging.info("PVC "+pvcfullname+". Temporary mount for "+pvname+": "+remote+" > "+dirlocal)
             subprocess.check_call(cmd)
-            logging.debug("Temporary mount for "+pvname+": "+remote+" > "+dirlocal)
+            logging.info("PVC "+pvcfullname+". Temporary mount for ok")
 
             try:
                 # create a subdirectory derived from pvname
@@ -91,34 +105,34 @@ def init_pv_data(pvc, sc):
                 subprocess.check_call(cmd)
 
                 # adjust user permissions
-                if ANNOTATION_UID in pvc["metadata"]["annotations"]:
-                    cmd = ["chown", pvc["metadata"]["annotations"][ANNOTATION_UID], dirlocalfull]
+                if ANNOTATION_UID in pvc.metadata.annotations:
+                    cmd = ["chown", pvc.metadata.annotations[ANNOTATION_UID], dirlocalfull]
                     subprocess.check_call(cmd)
-                    logging.debug("User permissions adjusted for "+pvname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
+                    logging.debug("PVC "+pvcfullname+". User permissions adjusted for "+pvname+": "+pvc.metadata.annotations[ANNOTATION_UID])
 
                 # adjust group permissions
-                if ANNOTATION_GID in pvc["metadata"]["annotations"]:
-                    cmd = ["chgrp", pvc["metadata"]["annotations"][ANNOTATION_GID], dirlocalfull]
+                if ANNOTATION_GID in pvc.metadata.annotations:
+                    cmd = ["chgrp", pvc.metadata.annotations[ANNOTATION_GID], dirlocalfull]
                     subprocess.check_call(cmd)
-                    logging.debug("Group permissions adjusted for "+pvname+": "+pvc["metadata"]["annotations"][ANNOTATION_UID])
+                    logging.debug("PVC "+pvcfullname+". Group permissions adjusted for "+pvname+": "+pvc.metadata.annotations[ANNOTATION_UID])
 
                 # adjust group permissions
-                if ANNOTATION_MODE in pvc["metadata"]["annotations"]:
-                    cmd = ["chmod", pvc["metadata"]["annotations"][ANNOTATION_MODE], dirlocalfull]
+                if ANNOTATION_MODE in pvc.metadata.annotations:
+                    cmd = ["chmod", pvc.metadata.annotations[ANNOTATION_MODE], dirlocalfull]
                     subprocess.check_call(cmd)
-                    logging.debug("File permissions adjusted for "+pvname+": "+pvc["metadata"]["annotations"][ANNOTATION_MODE])
+                    logging.debug("PVC "+pvcfullname+". File permissions adjusted for "+pvname+": "+pvc.metadata.annotations[ANNOTATION_MODE])
             finally:
                 # umount
                 cmd = ["umount", dirlocal]
                 subprocess.check_call(cmd)
-                logging.debug("Initialization complete for "+pvname+": "+dirlocal+" umounted")
+                logging.debug("PVC "+pvcfullname+". Initialization complete for "+pvname+": "+dirlocal+" umounted")
         finally:
             # remove temporary dir
             cmd = ["rm", "-rf", dirlocal]
             subprocess.check_call(cmd)
 
     except Exception as err:
-        logging.error("Failed to initialize data inside NFS share: "+str(err))
+        logging.error("PVC "+pvcfullname+". Failed to initialize data inside NFS share: "+str(err))
         raise err
 
 ################################################################################
@@ -126,14 +140,17 @@ def init_pv_data(pvc, sc):
 ################################################################################
 def provision_pv(pvc):
     pvcfullname = pvc.metadata.namespace + "-" + pvc.metadata.name
-    scname = pvc.spec.storage_class_name
+    scname = str(pvc.spec.storage_class_name)
     
-    sc = storageapi.list_storage_class(field_selector="metadata.name="+scname)
-    if len(sc.items) <= 0:
+    sc = None
+    for item in storageapi.list_storage_class().items:
+        if item.metadata.name == scname:
+            sc = item
+            break
+    
+    if not sc:
         logging.warning("PVC "+pvcfullname+" StorageClass not found "+scname)
         return
-    
-    sc = sc.items[0]
     
     if not sc.provisioner == PROVISIONER_NAME:
         logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Ingoring event.")
@@ -175,8 +192,11 @@ def provision_pv(pvc):
 
     pv = coreapi.list_persistent_volume(field_selector="metadata.name="+pvname)
     if len(pv.items) > 0:
-        logging.debug("PVC "+pvcfullname+". PV "+pvname+" already exists. Ingoring event.")
+        logging.info("PVC "+pvcfullname+". PV "+pvname+" already exists. Ingoring event.")
         return
+
+    if ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true":
+        init_pv_data(pvc, sc)
 
     pv = kubernetes.client.V1PersistentVolume()
     pv.metadata = kubernetes.client.V1ObjectMeta()
@@ -222,40 +242,44 @@ def provision_pv(pvc):
 ## Try mounting the NFS share related to a PV and delete its data according
 ## to the PV reclaim policy.
 ################################################################################
-def deletePVData(sc, pvname, reclaimPolicy):
+def delete_pv_data(pv, sc):
     try:
-        server = sc["parameters"]["server"]
-        share  = sc["parameters"]["share"]
+        if pv.spec.persistent_volume_reclaim_policy and pv.spec.persistent_volume_reclaim_policy.upper() == "RETAIN":
+            logging.error("PV "+pv.metadata.name+". Reclaim policy "+pv.spec.persistent_volume_reclaim_policy+". Will not delete PV data.")
+            return
+
+        server = sc.parameters["server"]
+        share  = sc.parameters["share"]
         path   = "/"
-        if "path" in sc["parameters"]:
-            path = sc["parameters"]["path"]
+        if "path" in sc.parameters:
+            path = sc.parameters["path"]
 
         remote = server + ":" + share
         dirlocal  = "/tmp/"+random_string(18)
-        dirlocalfull = dirlocal + path + "/" + pvname
+        dirlocalfull = dirlocal + path + "/" + pv.metadata.name
+
+        if ".." in remote:
+            logging.error("PV "+pv.metadata.name+". Invalid path "+remote+". Refusing to delete PV data")
+            return
 
         # create temporary dir
         cmd = ["mkdir", "-p", dirlocal]
         subprocess.check_call(cmd)
 
-        if ".." in remote:
-            logging.error("Invalid path "+remote+". Refusing to delete PV data")
-            return
-
         try:
             # mount the remote share temporarily
             cmd = ["mount", "-t", nfsversion, remote, dirlocal]
             subprocess.check_call(cmd)
-            logging.debug("Mount "+pvname+": "+remote+" > "+dirlocal)
+            logging.debug("PV "+pv.metadata.name+". Mount "+remote+" > "+dirlocal)
             try:
                 cmd = ["rm", "-rf", dirlocalfull]
                 subprocess.check_call(cmd)
-                logging.info(reclaimPolicy+" reclaim policy complete for "+pvname+": "+dirlocalfull)
+                logging.info("PV "+pv.metadata.name+". All data deleted successfully.")
             finally:
                 # umount
                 cmd = ["umount", dirlocal]
                 subprocess.check_call(cmd)
-                logging.debug("Umount "+pvname+": "+remote+" > "+dirlocal)
+                logging.debug("PV "+pv.metadata.name+". "+remote+" > "+dirlocal)
         finally:
             # remove temporary dir
             cmd = ["rm", "-rf", dirlocal]
@@ -270,7 +294,7 @@ def deletePVData(sc, pvname, reclaimPolicy):
 ## Remove a PV given the PVC that was removed from the cluster
 ################################################################################
 def remove_pv(pvc):
-    scname = pvc.spec.storage_class_name
+    scname = str(pvc.spec.storage_class_name)
     sc = storageapi.list_storage_class(field_selector="metadata.name="+scname)
     if len(sc.items) <= 0:
         logging.warning("PVC "+pvcfullname+" StorageClass not found "+scname)
@@ -290,20 +314,32 @@ def remove_pv(pvc):
         logging.warning("PVC "+pvcfullname+" is not associated to a volumeName. Ingoring event.")
         return
 
+    if "keepPv" in sc.parameters and sc.parameters["keepPv"] == "true":
+        logging.warning("PVC "+pvcfullname+" StorageClass "+scname+" wants to keep the PV. Ignoring event.")
+        logging.warning("PVC "+pvcfullname+" This may cause problems to rebind the same PV later.")
+        return
+
+    pv = coreapi.list_persistent_volume(field_selector="metadata.name="+pvname).items
+    if len(pv) <= 0:
+        logging.debug("PVC "+pvcfullname+". PV "+pvname+" already exists. Ingoring event.")
+        return
+    pv = pv[0]
+
     coreapi.delete_persistent_volume(name=pvname)
+    logging.debug("PVC "+pvcfullname+". PV "+pvname+" deleted")
 
-    # if pv.spec.persistent_volume_reclaim_policy and pv.spec.persistent_volume_reclaim_policy.upper() == "DELETE":
-    #     deletePVData(sc, pvname, rp)
+    if pv.spec.persistent_volume_reclaim_policy and pv.spec.persistent_volume_reclaim_policy.upper() == "DELETE":
+        delete_pv_data(pv, sc)
 
-    logging.info("PVC "+pvcfullname+". PV "+pvname+" removed successfully.")
+    logging.info("PVC "+pvcfullname+". PV "+pvname+" removal completed successfully")
 
 ################################################################################
 ## Main loop
 ################################################################################
 logging.info("WELCOME: nfs-volume-provisioner, juliohm.com.br")
+logging.info("Watching for PVCs")
 while True:
     try:
-        logging.info("Watching for PVCs")
         w = kubernetes.watch.Watch()
         for event in w.stream(coreapi.list_persistent_volume_claim_for_all_namespaces, _request_timeout=60):
             eventtype = event["type"]
