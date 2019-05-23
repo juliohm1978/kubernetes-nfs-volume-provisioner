@@ -10,5 +10,25 @@ parameters:
   # path: /subpath
   # namespace: some-namespace
   # keepPv: "false"
+  readOnly: "true"
+mountOptions:
+  - "ro"
+  - "123"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: sc02
+provisioner: nfs-provisioner.juliohm.com.br
+parameters:
+  pvNamePrefix: ""
+  server: 192.168.100.58
+  share: /myshare
+  # path: /subpath
+  namespace: some-namespace
+  # keepPv: "false"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate

@@ -8,6 +8,8 @@ import subprocess
 import json
 import jinja2
 import time
+import kubernetes
+import urllib3
 import controllerargs
 
 args = controllerargs.p.parse_args()
@@ -32,82 +34,15 @@ if args.debugLevel:
 
 logging.basicConfig(level=debuglevel, format="%(asctime)s [%(levelname)s] %(message)s")
 
+kubernetes.config.load_kube_config("/home/lamento/.kube/config.k3s")
+coreapi = kubernetes.client.CoreV1Api()
+storageapi = kubernetes.client.StorageV1Api()
+
 ################################################################################
 ## Generate a random string of a given size
 ################################################################################
 def randomString(size):
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
-
-################################################################################
-## Search for a storage class
-################################################################################
-def findStorageClass(scname):
-    try:
-        cmd = ["kubectl", "get", "sc", "-ojson", scname]
-        s = subprocess.check_output(cmd, universal_newlines=True)
-        return json.loads(s)
-    except subprocess.CalledProcessError as err:
-        logging.debug(err, exc_info=True)
-        pass
-
-################################################################################
-## Search for a persistent volume
-################################################################################
-def findPersistentVolume(pvname):
-    try:
-        cmd = ["kubectl", "get", "pv", "-ojson", pvname]
-        s = subprocess.check_output(cmd, universal_newlines=True, stderr=subprocess.DEVNULL)
-        return json.loads(s)
-    except subprocess.CalledProcessError as err:
-        logging.debug(err, exc_info=True)
-        pass
-
-################################################################################
-## PVC Patch Template
-################################################################################
-def pvcPatchTemplate():
-    return jinja2.Template("""
-spec:
-  volumeName: {{ pvname }}
-status:
-  phase: Bound
-""")
-
-################################################################################
-## PV Template
-################################################################################
-def pvTemplate():
-    return jinja2.Template("""
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ name }}
-  labels:
-    {{ labelPvcName }}: {{ pvcName }}
-    {{ labelPvcNameSpace }}: {{ pvcNamespace }}
-    {{ labelStorageClassName }}: {{ storageClassName }}
-spec:
-  storageClassName: {{ storageClassName }}
-  capacity:
-    storage: {{ storage }}
-  accessModes:
-  {% for am in accessModes %}
-  - {{ am }}
-  {% endfor %}
-  claimRef:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    name: {{ pvcName }}
-    namespace: {{ pvcNamespace }}
-    uid: {{ pvcUID }}
-  persistentVolumeReclaimPolicy: {{ reclaimPolicy }}
-  nfs: 
-    path: {{ path }}
-    server: {{ server }}
-    readOnly: {{ readOnly }}
-status:
-  phase: Bound
-""")
 
 ################################################################################
 ## Initialize the data inside the NFS share to match specifications defined
@@ -188,118 +123,98 @@ def initPVData(pvc, sc):
 ################################################################################
 ## Provision a new PV for a given PVC
 ################################################################################
-def provisionPV(pvcnamespace, pvcname):
-    cmd = ["kubectl", "get", "pvc", "--namespace", pvcnamespace, pvcname, "-ojson"]
-    s = subprocess.check_output(cmd, universal_newlines=True)
-    pvc = json.loads(s)
-    if not "storageClassName" in pvc["spec"]:
-        logging.warning("PVC "+pvcnamespace+"/"+pvcname+" does not have a storageClassName")
-        return
-    scname = pvc["spec"]["storageClassName"]
-    sc = findStorageClass(scname)
-    if not sc:
-        return
-    if not "provisioner" in sc:
-        logging.warning("StorageClass "+scname+" has no provisioner defined")
-        return
-    scprovisioner = sc["provisioner"]
-    if scprovisioner != PROVISIONER_NAME:
-        logging.warning("StorageClass "+scname+" provisioner does not match "+PROVISIONER_NAME)
-        return
-
-    if not "parameters" in sc:
-        logging.warning("StorageClass "+scname+" does not have any parameters")
-        return
-
-    if args.namespace and pvcnamespace != args.namespace:
-        logging.warning("StorageClass "+scname+" GLOBALLY restricted to namespace "+args.namespace+", ignoring PV "+pvcnamespace+"/"+pvcname)
-        return
-
-    if "namespace" in sc["parameters"] and pvcnamespace != sc["parameters"]["namespace"]:
-        logging.warning("StorageClass "+scname+" restricted to namespace "+sc["parameters"]["namespace"]+", ignoring PV "+pvcnamespace+"/"+pvcname)
-        return
-
-    pvnameprefix  = None
-    nfsserver     = None
-    nfsshare      = None
-    nfspath       = ""
-    nfsreadonly   = "false"
-    scnamespace   = None
-
-    if not "server" in sc["parameters"]:
-        logging.warning("StorageClass "+scname+" missing parameter: server")
-        return
-    nfsserver = sc["parameters"]["server"]
-
-    if not "share" in sc["parameters"]:
-        logging.warning("StorageClass "+scname+" missing parameter: share")
-        return
-    nfsshare = sc["parameters"]["share"]
-
-    if "path" in sc["parameters"]:
-        nfspath = sc["parameters"]["path"]
-
-    if "readOnly" in sc["parameters"]:
-        nfsreadonly = sc["parameters"]["readOnly"]
-
-    if "pvNamePrefix" in sc["parameters"]:
-        pvnameprefix = sc["parameters"]["pvNamePrefix"]
-
-    if "namespace" in sc["parameters"]:
-        scnamespace = sc["parameters"]
-    if scnamespace and scnamespace != pvcnamespace:
-        logging.warning("StorageClass "+scname+" restricted to "+scnamespace+", ignoring PVC "+pvcnamespace+"/"+pvcname)
-        return
-
-    accessModes = list()
-    if "accessModes" in pvc["spec"]:
-        accessModes = pvc["spec"]["accessModes"]
-
-    if not "reclaimPolicy" in sc:
-        logging.warning("StorageClass "+scname+" missing reclaimPolicy")
-        return
-    reclaimPolicy = sc["reclaimPolicy"]
-
-    storage = pvc["spec"]["resources"]["requests"]["storage"]
-
-    pvname = pvcnamespace+"-"+pvcname
-    if pvnameprefix:
-        pvname = pvnameprefix+"-"+pvname
+def provisionPV(pvc):
+    pvcfullname = pvc.metadata.namespace + "-" + pvc.metadata.name
+    scname = pvc.spec.storage_class_name
     
-    pvexists = findPersistentVolume(pvname)
-    if pvexists:
-        logging.info("PV "+pvname+" already exists. Ignoring event")
+    sc = storageapi.list_storage_class(field_selector="metadata.name="+scname)
+    if len(sc.items) <= 0:
+        logging.warning("PVC "+pvcfullname+" StorageClass not found "+scname)
+        return
+    
+    sc = sc.items[0]
+    
+    if not sc.provisioner == PROVISIONER_NAME:
+        logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Ingoring event.")
+        return
+    if ("namespace" in sc.parameters) and (sc.parameters["namespace"] != pvc.metadata.namespace):
+        logging.warning("PVC "+pvcfullname+" namespace does not patch provisioner scope: "+sc.parameters['namespace']+". Ingoring event.")
+        return
+    
+    pvNamePrefix = None
+    server       = None
+    share        = "/"
+    path         = ""
+    readOnly     = False
+    mountOptions = None
+    keepPv       = False
+
+    if "pvNamePrefix" in sc.parameters:
+        pvNamePrefix = sc.parameters["pvNamePrefix"]
+    if "server" in sc.parameters:
+        server = sc.parameters["server"]
+    if "share" in sc.parameters:
+        share = sc.parameters["share"]
+    if "path" in sc.parameters:
+        path = sc.parameters["path"]
+    if "readOnly" in sc.parameters and sc.parameters["readOnly"] == "true":
+        readOnly = True
+    if "mountOptions" in sc.parameters:
+        mountOptions = sc.parameters["mountOptions"]
+    if "keepPv" in sc.parameters and sc.parameters["keepPv"] == "true":
+        keepPv = True
+
+    if not server:
+        logging.warning("PVC "+pvcfullname+". StorageClass "+scname+". Missing parameter 'server'. Ingoring event.")
         return
 
-    ## Try to create subdirectories inside NFS share and adjust permissions
-    ## before delivering the PV.
-    initPVData(pvc, sc)
+    pvname = pvc.metadata.namespace + "-" + pvc.metadata.name
+    if pvNamePrefix:
+        pvname = pvNamePrefix + "-" + pvname
 
-    ## Patch PVC with a bind to the PV that will be created.
-    s = pvcPatchTemplate().render(pvname=pvname)
-    cmd = ["kubectl", "patch", "pvc", "--namespace", pvcnamespace, pvcname, "--patch", s]
-    logging.info("PVC patched "+pvcnamespace+"/"+pvcname+" with volumeName="+pvname)
-    subprocess.check_output(cmd)
+    pv = coreapi.list_persistent_volume(field_selector="metadata.name="+pvname)
+    if len(pv.items) > 0:
+        logging.debug("PVC "+pvcfullname+". PV "+pvname+" already exists. Ingoring event.")
+        return
 
-    ## Create a PV alredy bound to the PVC
-    s = pvTemplate().render(
-        name=pvname,
-        path=nfsshare+nfspath+"/"+pvname,
-        server=nfsserver,
-        readOnly=nfsreadonly,
-        accessModes=accessModes,
-        reclaimPolicy=reclaimPolicy,
-        storage=storage,
-        storageClassName=scname,
-        pvcName=pvcname,
-        pvcNamespace=pvcnamespace,
-        labelPvcName=LABEL_PVCNAME,
-        labelPvcNameSpace=LABEL_PVCNAMESPACE,
-        labelStorageClassName=LABEL_STORAGECLASSNAME,
-        pvcUID=pvc["metadata"]["uid"]
-    )
-    cmd = ["kubectl", "apply", "-f", "-"]
-    subprocess.check_output(cmd, input=s.encode())
+    pv = kubernetes.client.V1PersistentVolume()
+    pv.metadata = kubernetes.client.V1ObjectMeta()
+    pv.metadata.name = pvname
+    pv.metadata.labels = dict()
+    pv.metadata.labels[LABEL_PVCNAME] = pvc.metadata.name
+    pv.metadata.labels[LABEL_PVCNAMESPACE] = pvc.metadata.namespace
+    pv.metadata.labels[LABEL_STORAGECLASSNAME] = scname
+    pv.spec = kubernetes.client.V1PersistentVolumeSpec()
+    pv.status = kubernetes.client.V1PersistentVolumeStatus()
+    if sc.volume_binding_mode and sc.volume_binding_mode.upper() == "IMMEDIATE":
+        pv.status.phase             = "Bound"
+        pv.spec.claim_ref           = kubernetes.client.V1ObjectReference()
+        pv.spec.claim_ref.name      = pvc.metadata.name
+        pv.spec.claim_ref.namespace = pvc.metadata.namespace
+        pv.spec.claim_ref.uid       = pvc.metadata.uid
+    pv.spec.access_modes = pvc.spec.access_modes
+    pv.spec.persistent_volume_reclaim_policy = sc.reclaim_policy
+    pv.spec.mount_options = list()
+    pv.spec.capacity = dict()
+    pv.spec.capacity["storage"] = pvc.spec.resources.requests["storage"]
+    pv.spec.nfs = kubernetes.client.V1NFSVolumeSource(
+        server=server, path=share + path + "/" + pvcfullname, read_only=readOnly)
+
+    coreapi.create_persistent_volume(pv)
+
+    pvcpatch = '''{
+        "spec": {
+            "volumeName": "'''+pvname+'''"
+        },
+        "status": {
+            "phase": "Bound"
+        }
+    }
+    '''
+
+    coreapi.patch_namespaced_persistent_volume_claim(
+        name=pvc.metadata.name, namespace=pvc.metadata.namespace, body=json.loads(pvcpatch))
+
     logging.info("PV created successfully "+pvname+", wait for binding to occur")
 
 ################################################################################
@@ -353,78 +268,58 @@ def deletePVData(sc, pvname, reclaimPolicy):
 ################################################################################
 ## Remove a given PV
 ################################################################################
-def removePV(pvname):
-    cmd = ["kubectl", "get", "pv", "-ojson", pvname]
-    pv = json.loads( subprocess.check_output(cmd, universal_newlines=True) )
-
-    if not "labels" in pv["metadata"]:
+def removePV(pvc):
+    scname = pvc.spec.storage_class_name
+    sc = storageapi.list_storage_class(field_selector="metadata.name="+scname)
+    if len(sc.items) <= 0:
+        logging.warning("PVC "+pvcfullname+" StorageClass not found "+scname)
         return
     
-    if not LABEL_STORAGECLASSNAME in pv["metadata"]["labels"]:
+    sc = sc.items[0]
+    
+    if not sc.provisioner == PROVISIONER_NAME:
+        logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Ingoring event.")
+        return
+    if ("namespace" in sc.parameters) and (sc.parameters["namespace"] != pvc.metadata.namespace):
+        logging.warning("PVC "+pvcfullname+" namespace does not patch provisioner scope: "+sc.parameters['namespace']+". Ingoring event.")
         return
 
-    scname = pv["metadata"]["labels"][LABEL_STORAGECLASSNAME]
-
-    cmd = ["kubectl", "get", "sc", "-ojson", scname]
-    sc = json.loads( subprocess.check_output(cmd, universal_newlines=True) )
-
-    if not "provisioner" in sc:
+    pvname = pvc.spec.volume_name
+    if not pvname:
+        logging.warning("PVC "+pvcfullname+" is not associated to a volumeName. Ingoring event.")
         return
 
-    if PROVISIONER_NAME != sc["provisioner"]:
-        return
+    coreapi.delete_persistent_volume(name=pvname)
 
-    keeppv = "false"
-    if "keepPv" in sc["parameters"] and sc["parameters"]["keepPv"] == "true":
-        return
+    # if pv.spec.persistent_volume_reclaim_policy and pv.spec.persistent_volume_reclaim_policy.upper() == "DELETE":
+    #     deletePVData(sc, pvname, rp)
 
-    logging.info("Found PV "+pvname+" in state Released")
-
-    cmd = ["kubectl", "delete", "pv", pvname]
-    subprocess.check_call(cmd)
-    logging.info("PV removed successfully "+pvname)
-
-    if "persistentVolumeReclaimPolicy" in pv["spec"]:
-        rp = pv["spec"]["persistentVolumeReclaimPolicy"].upper()
-        if rp=="DELETE":
-            deletePVData(sc, pvname, rp)
+    logging.info("PVC "+pvcfullname+". PV "+pvname+" removed successfully.")
 
 ################################################################################
 ## Main loop
 ################################################################################
 logging.info("WELCOME: nfs-volume-provisioner, juliohm.com.br")
-logging.info("Watching for PVCs")
 while True:
     try:
-        # Look for pending PVCs
-        cmd = ["kubectl", "get", "pvc", "--all-namespaces", "-ojson"]
-        s = subprocess.check_output(cmd, universal_newlines=True)
-        pvc = json.loads(s)
-        for item in pvc["items"]:
+        logging.info("Watching for PVCs")
+        w = kubernetes.watch.Watch()
+        for event in w.stream(coreapi.list_persistent_volume_claim_for_all_namespaces, _request_timeout=60):
+            eventtype = event["type"]
+            pvc = event["object"]
+            pvcfullname = pvc.metadata.namespace+"-"+pvc.metadata.name
             try:
-                pvcnamespace = item["metadata"]["namespace"]
-                pvcname      = item["metadata"]["name"]
-                pvcstatus    = item["status"]["phase"].upper()
-                if pvcstatus.upper() == "PENDING":
-                    provisionPV(pvcnamespace, pvcname)
+                logging.debug("Event: "+eventtype+" "+pvcfullname)
+                if eventtype == "ADDED":
+                    provisionPV(pvc)
+                elif eventtype == "DELETED":
+                    removePV(pvc)
             except Exception as err:
+                logging.error("Error processing event "+eventtype+" for PVC "+pvcfullname)
                 logging.error(err, exc_info=True)
-
-        # Look for released PVs
-        cmd = ["kubectl", "get", "pv", "-ojson"]
-        s = subprocess.check_output(cmd, universal_newlines=True)
-        pvc = json.loads(s)
-        for item in pvc["items"]:
-            try:
-                pvname   = item["metadata"]["name"]
-                pvstatus = item["status"]["phase"].upper()
-                if pvstatus=="RELEASED" or pvstatus=="FAILED":
-                    removePV(pvname)
-            except Exception as err:
-                logging.error(err, exc_info=True)
-
+    except urllib3.exceptions.ReadTimeoutError:
+        logging.debug("API timeout. We'll return after these messages...")
     except Exception as err:
         logging.error("Unable to check for PVCs")
         logging.error(err, exc_info=True)
-
-    time.sleep(args.interval)
+    time.sleep(5)
