@@ -217,6 +217,7 @@ The controller itself accepts a few command line options. They allow debugging i
 
 | Option | Description |
 |---|---|
+| `--kubeconfig`    | Kube config file to load. Default: `~/.kube/config`. In-cluster credentials are loaded first and take precedence. If the controller realizes it's running inside a Kubernetes Pod, this argument will be ignored. |
 | `--disablePvInit` | Globally disable PV initialization. When disabled, the controller will not attempt to mount the NFS share to adjust directories and permissions before delivering the PV. |
 | `--namespace`     | Restrict all StorageClasses to one particular namespace. If this value is defined, The `namespace` parameter in all StorageClasses will be ignored. |
 | `--interval`      | Polling interval, in seconds, on the Kubernetes API. Default 30. |

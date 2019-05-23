@@ -57,15 +57,12 @@ def init_pv_data(pvc, sc):
         if args.disablePvInit:
             return
 
-        if not "annotations" in pvc["metadata"]:
+        if ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
             return
 
-        if ANNOTATION_INITPERMS in pvc["metadata"]["annotations"] and pvc["metadata"]["annotations"][ANNOTATION_INITPERMS] == "false":
-            return
-
-        pvname = pvc["metadata"]["namespace"] + "-" + pvc["metadata"]["name"]
-        server = sc["parameters"]["server"]
-        share  = sc["parameters"]["share"]
+        pvname = pvc.metadata.namespace + "-" + pvc.metadata.name
+        server = sc.parameters["server"]
+        share  = sc.parameters["share"]
         path   = "/"
         if "path" in sc["parameters"]:
             path = sc["parameters"]["path"]
