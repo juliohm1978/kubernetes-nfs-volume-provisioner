@@ -34,21 +34,25 @@ if args.debugLevel:
 
 logging.basicConfig(level=debuglevel, format="%(asctime)s [%(levelname)s] %(message)s")
 
-kubernetes.config.load_kube_config("/home/lamento/.kube/config.k3s")
+if "KUBERNETES_SERVICE_HOST" in os.environ:
+    kubernetes.config.load_incluster_config()
+else:
+    kubernetes.config.load_kube_config("/home/lamento/.kube/config.k3s")
+
 coreapi = kubernetes.client.CoreV1Api()
 storageapi = kubernetes.client.StorageV1Api()
 
 ################################################################################
 ## Generate a random string of a given size
 ################################################################################
-def randomString(size):
+def random_string(size):
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
 
 ################################################################################
 ## Initialize the data inside the NFS share to match specifications defined
 ## in the StorageClass and PVC. Skip if any flags mark otherwise.
 ################################################################################
-def initPVData(pvc, sc):
+def init_pv_data(pvc, sc):
     try:
         if args.disablePvInit:
             return
@@ -67,7 +71,7 @@ def initPVData(pvc, sc):
             path = sc["parameters"]["path"]
 
         remote = server + ":" + share
-        dirlocal  = "/tmp/"+randomString(18)
+        dirlocal  = "/tmp/"+random_string(18)
         dirlocalfull = dirlocal + path + "/" + pvname
 
         if ".." in remote:
@@ -123,7 +127,7 @@ def initPVData(pvc, sc):
 ################################################################################
 ## Provision a new PV for a given PVC
 ################################################################################
-def provisionPV(pvc):
+def provision_pv(pvc):
     pvcfullname = pvc.metadata.namespace + "-" + pvc.metadata.name
     scname = pvc.spec.storage_class_name
     
@@ -230,7 +234,7 @@ def deletePVData(sc, pvname, reclaimPolicy):
             path = sc["parameters"]["path"]
 
         remote = server + ":" + share
-        dirlocal  = "/tmp/"+randomString(18)
+        dirlocal  = "/tmp/"+random_string(18)
         dirlocalfull = dirlocal + path + "/" + pvname
 
         # create temporary dir
@@ -266,9 +270,9 @@ def deletePVData(sc, pvname, reclaimPolicy):
 
 
 ################################################################################
-## Remove a given PV
+## Remove a PV given the PVC that was removed from the cluster
 ################################################################################
-def removePV(pvc):
+def remove_pv(pvc):
     scname = pvc.spec.storage_class_name
     sc = storageapi.list_storage_class(field_selector="metadata.name="+scname)
     if len(sc.items) <= 0:
@@ -311,9 +315,9 @@ while True:
             try:
                 logging.debug("Event: "+eventtype+" "+pvcfullname)
                 if eventtype == "ADDED":
-                    provisionPV(pvc)
+                    provision_pv(pvc)
                 elif eventtype == "DELETED":
-                    removePV(pvc)
+                    remove_pv(pvc)
             except Exception as err:
                 logging.error("Error processing event "+eventtype+" for PVC "+pvcfullname)
                 logging.error(err, exc_info=True)
