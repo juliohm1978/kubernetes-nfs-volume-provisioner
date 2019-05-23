@@ -37,7 +37,7 @@ logging.basicConfig(level=debuglevel, format="%(asctime)s [%(levelname)s] %(mess
 if "KUBERNETES_SERVICE_HOST" in os.environ:
     kubernetes.config.load_incluster_config()
 else:
-    kubernetes.config.load_kube_config("/home/lamento/.kube/config.k3s")
+    kubernetes.config.load_kube_config(args.kubeconfig)
 
 coreapi = kubernetes.client.CoreV1Api()
 storageapi = kubernetes.client.StorageV1Api()
