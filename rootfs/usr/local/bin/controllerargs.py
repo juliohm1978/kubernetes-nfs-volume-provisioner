@@ -16,6 +16,12 @@ line options passed directly to this controller.
 """)
 
 p.add_argument(
+    "--kubeconfig",
+    default="~/.kube/config",
+    help="Kubectl config file to load. In-cluster credentials take precedence over this argument. Mostly useful for local testing and debug. If the controller can load in-cluster credentials, this argument is ignored."
+)
+
+p.add_argument(
     "--nfsVersion",
     default="4",
     help="NFS version to use. Possible values: 3 or 4. Default: 4."

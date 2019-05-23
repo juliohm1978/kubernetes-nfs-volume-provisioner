@@ -167,6 +167,12 @@ parameters:
   ## Optional
   ## Default: false
   keepPv: "false"
+
+  ## Marks the readOnly flag in the PV NFS definition.
+  ## In the PersistentVolume, refers to the field .spec.nfs.readOnly
+  ## Optional
+  ## Default: false
+  readOnly: "false"
 ```
 
 The controller uses the StorageClass parameters and the PVC metadata to fully provision the NFS volume. It is possible to use several PersistentVolumes on the same remote NFS share without conflict. To keep storage access unique, a PV will point exactly to:
@@ -219,6 +225,7 @@ The controller itself accepts a few command line options. They allow debugging i
 
 | Option | Description |
 |---|---|
+| `--kubeconfig`    | Kube config file to load. Default: `~/.kube/config`. In-cluster credentials are loaded first and take precedence. If the controller realizes it's running inside a Kubernetes Pod, this argument will be ignored. |
 | `--disablePvInit` | Globally disable PV initialization. When disabled, the controller will not attempt to mount the NFS share to adjust directories and permissions before delivering the PV. |
 | `--namespace`     | Restrict all StorageClasses to one particular namespace. If this value is defined, The `namespace` parameter in all StorageClasses will be ignored. |
 | `--interval`      | Polling interval, in seconds, on the Kubernetes API. Default 30. |

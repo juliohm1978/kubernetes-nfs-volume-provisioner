@@ -5,10 +5,27 @@ metadata:
 provisioner: nfs-provisioner.juliohm.com.br
 parameters:
   pvNamePrefix: ""
+  server: 192.168.3.96
+  share: /myshare
+  path: /subpath
+  namespace: some-namespace
+  readOnly: "true"
+mountOptions:
+  - "loud"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: sc02
+provisioner: nfs-provisioner.juliohm.com.br
+parameters:
+  pvNamePrefix: ""
   server: 192.168.100.58
   share: /myshare
-  # path: /subpath
-  # namespace: some-namespace
-  # keepPv: "false"
+  namespace: some-namespace
+  readOnly: "true"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
