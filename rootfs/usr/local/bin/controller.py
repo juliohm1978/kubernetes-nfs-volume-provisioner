@@ -243,6 +243,9 @@ def provision_pv(pvc):
 ## to the PV reclaim policy.
 ################################################################################
 def delete_pv_data(pv, sc):
+    if args.disablePvInit:
+        logging.warning("PV "+pv.metadata.name+". Controller defines flag --disablePvInit. PV data will NOT be deleted.")
+        return
     try:
         if pv.spec.persistent_volume_reclaim_policy and pv.spec.persistent_volume_reclaim_policy.upper() == "RETAIN":
             logging.error("PV "+pv.metadata.name+". Reclaim policy "+pv.spec.persistent_volume_reclaim_policy+". Will not delete PV data.")
