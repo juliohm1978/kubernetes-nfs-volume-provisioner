@@ -149,7 +149,7 @@ def provision_pv(pvc):
             break
     
     if not sc:
-        logging.warning("PVC "+pvcfullname+" StorageClass not found "+scname)
+        logging.debug("PVC "+pvcfullname+" StorageClass not found "+scname)
         return
     
     if not sc.provisioner == PROVISIONER_NAME:
@@ -301,7 +301,7 @@ def remove_pv(pvc):
     scname = str(pvc.spec.storage_class_name)
     sc = storageapi.list_storage_class(field_selector="metadata.name="+scname)
     if len(sc.items) <= 0:
-        logging.warning("PVC "+pvcfullname+" StorageClass not found "+scname)
+        logging.debug("PVC "+pvcfullname+" StorageClass not found "+scname)
         return
     
     sc = sc.items[0]
