@@ -195,8 +195,9 @@ def provision_pv(pvc):
         logging.info("PVC "+pvcfullname+". PV "+pvname+" already exists. Ingoring event.")
         return
 
-    if ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true":
-        init_pv_data(pvc, sc)
+    if ANNOTATION_INITPERMS in pvc.metadata.annotations:
+        if pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true":
+            init_pv_data(pvc, sc)
 
     pv = kubernetes.client.V1PersistentVolume()
     pv.metadata = kubernetes.client.V1ObjectMeta()
