@@ -44,96 +44,59 @@ coreapi = kubernetes.client.CoreV1Api()
 storageapi = kubernetes.client.StorageV1Api()
 
 ################################################################################
-## Generate a random string of a given size
-################################################################################
-def random_string(size):
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
-
-################################################################################
 ## Initialize the data inside the NFS share to match specifications defined
 ## in the StorageClass and PVC. Skip if any flags mark otherwise.
 ################################################################################
 def init_pv_data(pvc, sc):
     pvcfullname = pvc.metadata.namespace + '-' + pvc.metadata.name
     logging.info("PVC "+pvcfullname+". Initializing NFS share directories")
-    try:
-        if args.disablePvInit:
-            return
 
-        if ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
-            return
+    if args.disablePvInit:
+        return
 
-        pvname       = pvc.metadata.namespace + "-" + pvc.metadata.name
-        server       = sc.parameters["server"]
-        share        = sc.parameters["share"]
-        path         = "/"
-        mountOptions = ""
-        if "path" in sc.parameters:
-            path = sc.parameters["path"]
-        if sc.mount_options:
-            for o in sc.mount_options:
-                mountOptions += ","+o
+    if pvc.metadata.annoations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
+        return
 
-        remote = server + ":" + share
-        dirlocal  = "/tmp/"+random_string(18)
-        dirlocalfull = dirlocal + path + "/" + pvname
+    server       = sc.parameters["server"]
+    share        = sc.parameters["share"]
+    path         = "/"
+    if "path" in sc.parameters:
+        path = sc.parameters["path"]
 
-        if ".." in remote:
-            logging.error("PVC "+pvcfullname+". Invalid path "+remote+". Refusing to initialize PV data")
-            return
+    localdir = args.nfsroot + '/' + sc.metadata.name
+    if not os.path.exists(localdir):
+        logging.error("PVC "+pvcfullname+". Path "+localdir+" does not exist. Mount NFS share here to allow PV Initialization.")
+        return
+    if not os.path.isdir(localdir):
+        logging.error("PVC "+pvcfullname+". Path "+localdir+" is not a directory. Mount NFS share here to allow PV Initialization.")
+        return
 
-        # create temporary dir
-        cmd = ["mkdir", "-p", dirlocal]
+    localdir = localdir + share + path + '/' + pvcfullname
+
+    if ".." in localdir:
+        logging.error("PVC "+pvcfullname+". Invalid path "+localdir+". Refusing to initialize PV data")
+        return
+
+    cmd = ["mkdir", "-p", localdir]
+    subprocess.check_call(cmd)
+
+    # adjust user permissions
+    if ANNOTATION_UID in pvc.metadata.annotations:
+        cmd = ["chown", pvc.metadata.annotations[ANNOTATION_UID], localdir]
         subprocess.check_call(cmd)
+        logging.debug("PVC "+pvcfullname+". User permissions adjusted for "+pvcfullname+": "+pvc.metadata.annotations[ANNOTATION_UID])
 
-        try:
-            # mount the remote share temporarily
-            cmd = ["mount", "-t", nfsversion]
-            if mountOptions:
-                cmd.append("-o")
-                cmd.append(mountOptions)
-            cmd.append("-v")
-            cmd.append(remote)
-            cmd.append(dirlocal)
-            logging.info("PVC "+pvcfullname+". Temporary mount for "+pvname+": "+remote+" > "+dirlocal)
-            subprocess.check_call(cmd)
-            logging.info("PVC "+pvcfullname+". Temporary mount for ok")
+    # adjust group permissions
+    if ANNOTATION_GID in pvc.metadata.annotations:
+        cmd = ["chgrp", pvc.metadata.annotations[ANNOTATION_GID], localdir]
+        subprocess.check_call(cmd)
+        logging.debug("PVC "+pvcfullname+". Group permissions adjusted for "+pvcfullname+": "+pvc.metadata.annotations[ANNOTATION_UID])
 
-            try:
-                # create a subdirectory derived from pvname
-                cmd = ["mkdir", "-p", dirlocalfull]
-                subprocess.check_call(cmd)
-
-                # adjust user permissions
-                if ANNOTATION_UID in pvc.metadata.annotations:
-                    cmd = ["chown", pvc.metadata.annotations[ANNOTATION_UID], dirlocalfull]
-                    subprocess.check_call(cmd)
-                    logging.debug("PVC "+pvcfullname+". User permissions adjusted for "+pvname+": "+pvc.metadata.annotations[ANNOTATION_UID])
-
-                # adjust group permissions
-                if ANNOTATION_GID in pvc.metadata.annotations:
-                    cmd = ["chgrp", pvc.metadata.annotations[ANNOTATION_GID], dirlocalfull]
-                    subprocess.check_call(cmd)
-                    logging.debug("PVC "+pvcfullname+". Group permissions adjusted for "+pvname+": "+pvc.metadata.annotations[ANNOTATION_UID])
-
-                # adjust group permissions
-                if ANNOTATION_MODE in pvc.metadata.annotations:
-                    cmd = ["chmod", pvc.metadata.annotations[ANNOTATION_MODE], dirlocalfull]
-                    subprocess.check_call(cmd)
-                    logging.debug("PVC "+pvcfullname+". File permissions adjusted for "+pvname+": "+pvc.metadata.annotations[ANNOTATION_MODE])
-            finally:
-                # umount
-                cmd = ["umount", dirlocal]
-                subprocess.check_call(cmd)
-                logging.debug("PVC "+pvcfullname+". Initialization complete for "+pvname+": "+dirlocal+" umounted")
-        finally:
-            # remove temporary dir
-            cmd = ["rm", "-rf", dirlocal]
-            subprocess.check_call(cmd)
-
-    except Exception as err:
-        logging.error("PVC "+pvcfullname+". Failed to initialize data inside NFS share: "+str(err))
-        raise err
+    # adjust access mode
+    if ANNOTATION_MODE in pvc.metadata.annotations:
+        cmd = ["chmod", pvc.metadata.annotations[ANNOTATION_MODE], localdir]
+        subprocess.check_call(cmd)
+        logging.debug("PVC "+pvcfullname+". File permissions adjusted for "+pvcfullname+": "+pvc.metadata.annotations[ANNOTATION_MODE])
 
 ################################################################################
 ## Provision a new PV for a given PVC
@@ -224,74 +187,36 @@ def provision_pv(pvc):
 
     coreapi.create_persistent_volume(pv)
 
-    pvcpatch = '''{
-        "spec": {
-            "volumeName": "'''+pvname+'''"
-        },
-        "status": {
-            "phase": "Bound"
-        }
-    }
-    '''
-
-    coreapi.patch_namespaced_persistent_volume_claim(
-        name=pvc.metadata.name, namespace=pvc.metadata.namespace, body=json.loads(pvcpatch))
-
     logging.info("PV created successfully "+pvname+", wait for binding to occur")
 
 ################################################################################
-## Try mounting the NFS share related to a PV and delete its data according
-## to the PV reclaim policy.
+## Try to delete PV data.
 ################################################################################
 def delete_pv_data(pv, sc):
-    if args.disablePvInit:
-        logging.warning("PV "+pv.metadata.name+". Controller defines flag --disablePvInit. PV data will NOT be deleted.")
+    server       = sc.parameters["server"]
+    share        = sc.parameters["share"]
+    path         = "/"
+    if "path" in sc.parameters:
+        path = sc.parameters["path"]
+
+    localdir = args.nfsroot + '/' + sc.metadata.name
+    if not os.path.exists(localdir):
+        logging.error("PVC "+pv.metadata.name+". Path "+localdir+" does not exist. Mount NFS share here to allow PV Initialization.")
         return
-    try:
-        if pv.spec.persistent_volume_reclaim_policy and pv.spec.persistent_volume_reclaim_policy.upper() == "RETAIN":
-            logging.error("PV "+pv.metadata.name+". Reclaim policy "+pv.spec.persistent_volume_reclaim_policy+". Will not delete PV data.")
-            return
+    if not os.path.isdir(localdir):
+        logging.error("PVC "+pv.metadata.name+". Path "+localdir+" is not a directory. Mount NFS share here to allow PV Initialization.")
+        return
 
-        server = sc.parameters["server"]
-        share  = sc.parameters["share"]
-        path   = "/"
-        if "path" in sc.parameters:
-            path = sc.parameters["path"]
+    localdir = localdir + share + path + '/' + pv.metadata.name
 
-        remote = server + ":" + share
-        dirlocal  = "/tmp/"+random_string(18)
-        dirlocalfull = dirlocal + path + "/" + pv.metadata.name
+    if ".." in localdir:
+        logging.error("PVC "+pv.metadata.name+". Invalid path "+localdir+". Refusing to initialize PV data")
+        return
 
-        if ".." in remote:
-            logging.error("PV "+pv.metadata.name+". Invalid path "+remote+". Refusing to delete PV data")
-            return
-
-        # create temporary dir
-        cmd = ["mkdir", "-p", dirlocal]
-        subprocess.check_call(cmd)
-
-        try:
-            # mount the remote share temporarily
-            cmd = ["mount", "-t", nfsversion, remote, dirlocal]
-            subprocess.check_call(cmd)
-            logging.debug("PV "+pv.metadata.name+". Mount "+remote+" > "+dirlocal)
-            try:
-                cmd = ["rm", "-rf", dirlocalfull]
-                subprocess.check_call(cmd)
-                logging.info("PV "+pv.metadata.name+". All data deleted successfully.")
-            finally:
-                # umount
-                cmd = ["umount", dirlocal]
-                subprocess.check_call(cmd)
-                logging.debug("PV "+pv.metadata.name+". "+remote+" > "+dirlocal)
-        finally:
-            # remove temporary dir
-            cmd = ["rm", "-rf", dirlocal]
-            subprocess.check_call(cmd)
-
-    except Exception as err:
-        logging.error("Failed to remove data from NFS share: "+str(err))
-        raise err
+    logging.info("PV "+pv.metadata.name+". Deleting PV data... For large contents, this could take a while.")
+    cmd = ["rm", "-rf", localdir]
+    subprocess.check_call(cmd)
+    logging.info("PV "+pv.metadata.name+". All data deleted successfully.")
 
 
 ################################################################################

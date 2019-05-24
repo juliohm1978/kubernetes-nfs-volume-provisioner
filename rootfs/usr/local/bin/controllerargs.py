@@ -22,6 +22,12 @@ p.add_argument(
 )
 
 p.add_argument(
+    "--nfsroot",
+    default="/mnt/nfs",
+    help="Directory where all NFS shares should be mounted to allow PV Data Initialization. If --disablePvInit is given, this argument will be ignored."
+)
+
+p.add_argument(
     "--nfsVersion",
     default="4",
     help="NFS version to use. Possible values: 3 or 4. Default: 4."

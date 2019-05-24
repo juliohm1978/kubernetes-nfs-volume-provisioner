@@ -12,23 +12,7 @@ Before you can use this controller, please note a few things.
 
 This controller **does not** provide an NFS server to your cluster. You will need at least one NFS service accessible in your network, and this controller will not give you that.
 
-If you wish to use the PV Data Initalization feature (details below), the NFS servers used in your StorageClasses should be available to the Pod running this controller. In order to prepare directories and permissions inside the NFS share, the controller needs be able to mount it before creating the PersistentVolume.
-
-**IMPORTANT:** This also means the controller Pod must run with `privileged: true` so it can perform `mount -t nfs` inside the cluster.
-
-In some cases, privileged containers are not allowed in the cluster. You can still run the controller without privilege escalation and disable PV initalization with command line arguments to the controller. Without this feature, directory and permissions inside the NFS share cannot be adjusted automatically, but the controller can still create PersistentVolumes assuming those steps will be done manually.
-
-### Install using kubectl
-
-For a quick local test, you can use `kubectl` directly. Use the files included in the `installation` directory. The easiest way is to call the `install` or `uninstall` targets in the `Makefile` provided. This will create all objects in the `default` namespace, and provides a way to get the controller running for a quick test.
-
-```shell
-# install
-make install
-
-# remove
-make unisntall
-```
+If you wish to use the PV Data Initalization feature (details below), the NFS shares used in your StorageClasses should be available to the controller at runtime. See installation below to see how to configure this in a helm deployment.
 
 ### Install using helm
 
@@ -129,8 +113,6 @@ status:
 
 Metadata from the StorageClass and PVC are used to create the PV.
 
-> **IMPORTANT**: The PV will contain some special labels related to the StorageClass and PVC used to create it. You should avoid removing or modifying these labels, since they help the controller find PVs that need to be removed from the cluster when their PVC counterparts are no longer available.
-
 The StorageClass parameters may be quite self explanatory, but here is a rundown of what each one means:
 
 ```yaml
@@ -215,7 +197,7 @@ When the `init-perms` annotation is `true`, the controller will attempt to mount
 
 These annotations allow PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
 
-**IMPORTANT**: In order for this feature to work, the controller Pod needs to run with `privileged: true`. If privileged Pods are not allowed in your cluster, you can safely disable the privilege escalation and run the controller with this feature disabled. For that, take a look at the [helm chart values.yaml](https://github.com/juliohm1978/charts/blob/master/charts/k8s-nfs-provisioner/values.yaml) and change the values of `privileged` and `args.disablePvInit` for your deployment.
+**IMPORTANT**: In order for this feature to work, the controller Pod needs to have access to the same NFS share declared in your StorageClass. In practice, that means the NFS share root must be mounted on the controller at `/nfs/<storage-class-name>`. This should be farily easy to declare in your helm deployment. If you are not using helm, you will need to declare all necessary volume mounts in the controller Pod manually.
 
 ## Controller command line options
 
