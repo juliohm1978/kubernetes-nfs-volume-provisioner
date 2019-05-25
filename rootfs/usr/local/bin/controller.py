@@ -98,7 +98,7 @@ def init_pv_data(pvc, sc):
         subprocess.check_call(cmd)
         logging.debug("PVC "+pvcfullname+". File permissions adjusted for "+pvcfullname+": "+pvc.metadata.annotations[ANNOTATION_MODE])
 
-    return true
+    return True
 
 ################################################################################
 ## Provision a new PV for a given PVC
