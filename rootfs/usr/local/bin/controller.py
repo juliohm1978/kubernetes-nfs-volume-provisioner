@@ -54,7 +54,7 @@ def init_pv_data(pvc, sc):
     if args.disablePvInit:
         return
 
-    if pvc.metadata.annoations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
+    if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
         return
 
     server       = sc.parameters["server"]
