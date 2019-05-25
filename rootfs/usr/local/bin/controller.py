@@ -52,10 +52,10 @@ def init_pv_data(pvc, sc):
     logging.info("PVC "+pvcfullname+". Initializing NFS share directories")
 
     if args.disablePvInit:
-        return
+        return false
 
     if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
-        return
+        return false
 
     server       = sc.parameters["server"]
     share        = sc.parameters["share"]
@@ -66,16 +66,16 @@ def init_pv_data(pvc, sc):
     localdir = args.nfsroot + '/' + sc.metadata.name
     if not os.path.exists(localdir):
         logging.error("PVC "+pvcfullname+". Path "+localdir+" does not exist. Mount NFS share here to allow PV Initialization.")
-        return
+        return false
     if not os.path.isdir(localdir):
         logging.error("PVC "+pvcfullname+". Path "+localdir+" is not a directory. Mount NFS share here to allow PV Initialization.")
-        return
+        return false
 
     localdir = localdir + share + path + '/' + pvcfullname
 
     if ".." in localdir:
         logging.error("PVC "+pvcfullname+". Invalid path "+localdir+". Refusing to initialize PV data")
-        return
+        return false
 
     cmd = ["mkdir", "-p", localdir]
     subprocess.check_call(cmd)
@@ -98,6 +98,8 @@ def init_pv_data(pvc, sc):
         subprocess.check_call(cmd)
         logging.debug("PVC "+pvcfullname+". File permissions adjusted for "+pvcfullname+": "+pvc.metadata.annotations[ANNOTATION_MODE])
 
+    return true
+
 ################################################################################
 ## Provision a new PV for a given PVC
 ################################################################################
@@ -118,8 +120,13 @@ def provision_pv(pvc):
     if not sc.provisioner == PROVISIONER_NAME:
         logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Ingoring event.")
         return
+
+    if args.namespace and pvc.metadata.namespace != args.namespace:
+        logging.warning("PVC "+pvcfullname+" namespace does not patch provisioner scope: "+args.namespace+". Ingoring event.")
+        return
+
     if ("namespace" in sc.parameters) and (sc.parameters["namespace"] != pvc.metadata.namespace):
-        logging.warning("PVC "+pvcfullname+" namespace does not patch provisioner scope: "+sc.parameters['namespace']+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+" namespace does not patch StorageClass scope: "+sc.parameters['namespace']+". Ingoring event.")
         return
     
     pvNamePrefix = None
@@ -160,7 +167,9 @@ def provision_pv(pvc):
 
     if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations:
         if pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true":
-            init_pv_data(pvc, sc)
+            if not init_pv_data(pvc, sc):
+                logging.info("PVC "+pvcfullname+". PV "+pvname+" data cannot be initialized. Ingoring event.")
+                return
 
     pv = kubernetes.client.V1PersistentVolume()
     pv.metadata = kubernetes.client.V1ObjectMeta()
@@ -235,7 +244,7 @@ def remove_pv(pvc):
         logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Ingoring event.")
         return
     if ("namespace" in sc.parameters) and (sc.parameters["namespace"] != pvc.metadata.namespace):
-        logging.warning("PVC "+pvcfullname+" namespace does not patch provisioner scope: "+sc.parameters['namespace']+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+" namespace does not patch StorageClass scope: "+sc.parameters['namespace']+". Ingoring event.")
         return
 
     pvname = pvc.spec.volume_name
