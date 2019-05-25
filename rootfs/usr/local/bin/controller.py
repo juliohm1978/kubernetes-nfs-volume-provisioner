@@ -52,10 +52,10 @@ def init_pv_data(pvc, sc):
     logging.info("PVC "+pvcfullname+". Initializing NFS share directories")
 
     if args.disablePvInit:
-        return false
+        return False
 
     if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
-        return false
+        return False
 
     server       = sc.parameters["server"]
     share        = sc.parameters["share"]
@@ -66,16 +66,16 @@ def init_pv_data(pvc, sc):
     localdir = args.nfsroot + '/' + sc.metadata.name
     if not os.path.exists(localdir):
         logging.error("PVC "+pvcfullname+". Path "+localdir+" does not exist. Mount NFS share here to allow PV Initialization.")
-        return false
+        return False
     if not os.path.isdir(localdir):
         logging.error("PVC "+pvcfullname+". Path "+localdir+" is not a directory. Mount NFS share here to allow PV Initialization.")
-        return false
+        return False
 
     localdir = localdir + share + path + '/' + pvcfullname
 
     if ".." in localdir:
         logging.error("PVC "+pvcfullname+". Invalid path "+localdir+". Refusing to initialize PV data")
-        return false
+        return False
 
     cmd = ["mkdir", "-p", localdir]
     subprocess.check_call(cmd)
