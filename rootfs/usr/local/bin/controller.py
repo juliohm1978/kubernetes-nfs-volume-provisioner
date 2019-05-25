@@ -20,10 +20,10 @@ if args.nfsVersion == "4":
     nfsversion = "nfs4"
 
 PROVISIONER_NAME     = "nfs-provisioner.juliohm.com.br"
-ANNOTATION_INITPERMS = "nvs-provisioner.juliohm.com.br/init-perms"
-ANNOTATION_UID       = "nvs-provisioner.juliohm.com.br/uid"
-ANNOTATION_GID       = "nvs-provisioner.juliohm.com.br/gid"
-ANNOTATION_MODE      = "nvs-provisioner.juliohm.com.br/mode"
+ANNOTATION_INITPERMS = "nfs-provisioner.juliohm.com.br/init-perms"
+ANNOTATION_UID       = "nfs-provisioner.juliohm.com.br/uid"
+ANNOTATION_GID       = "nfs-provisioner.juliohm.com.br/gid"
+ANNOTATION_MODE      = "nfs-provisioner.juliohm.com.br/mode"
 
 LABEL_PVCNAME          = "nfs-provisioner.juliohm.com.br/pvcName"
 LABEL_PVCNAMESPACE     = "nfs-provisioner.juliohm.com.br/pvcNamespace"
