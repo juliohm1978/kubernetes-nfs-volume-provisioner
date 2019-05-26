@@ -47,7 +47,7 @@ If you deploy the controller without using the helm chart, you will need to prov
 
 ### The controller runs as root
 
-In order to provide PV Data Initialization, the controller runs as root inside its container.
+In order to provide PV Data Initialization, the controller runs as root inside its container. Please consider this if you have restrictions to Pods running with elevated privileges in your cluster.
 
 ### Cutomize your deployment
 
