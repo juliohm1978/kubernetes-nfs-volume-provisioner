@@ -12,7 +12,6 @@ Before you can use this controller, please note a few things.
 
 This controller **does not** provide an NFS server to your cluster. You will need at least one NFS service accessible in your network, and this controller will not give you that.
 
-If you wish to use the PV Data Initalization feature (details below), the NFS shares used in your StorageClasses should be available to the controller at runtime. See installation below to see how to configure this in a helm deployment.
 
 ### Install using helm
 
