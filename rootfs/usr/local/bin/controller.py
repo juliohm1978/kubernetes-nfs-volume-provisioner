@@ -51,9 +51,6 @@ def init_pv_data(pvc, sc):
     pvcfullname = pvc.metadata.namespace + '-' + pvc.metadata.name
     logging.info("PVC "+pvcfullname+". Initializing NFS share directories")
 
-    if args.disablePvInit:
-        return False
-
     if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
         return False
 
@@ -166,7 +163,7 @@ def provision_pv(pvc):
         return
 
     if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations:
-        if pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true":
+        if pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true" and not args.disablePvInit:
             if not init_pv_data(pvc, sc):
                 logging.info("PVC "+pvcfullname+". PV "+pvname+" data cannot be initialized. Ingoring event.")
                 return
