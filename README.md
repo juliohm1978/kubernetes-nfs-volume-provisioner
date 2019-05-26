@@ -206,7 +206,7 @@ When the `init-perms` annotation is `true`, the controller will attempt to mount
 
 These annotations allow PVs to be fully provisioned, making sure its volume directories exist on the remote NFS server with the correct owner and permissions.
 
-**IMPORTANT**: In order for this feature to work, the controller Pod needs to have access to the same NFS share declared in your StorageClass. In practice, that means the NFS share must be mounted on the controller at `/nfs/<storage-class-name>`. This should be farily easy to declare in your helm deployment. If you are not using helm, you will need to declare all necessary volume mounts in the controller Pod manually.
+**IMPORTANT**: In order for this feature to work, the controller Pod needs to have access to the same NFS share declared in your StorageClass. In practice, that means the NFS share must be mounted on the controller at `/nfs/<storage-class-name>`. Using the provided helm chart, this should farily easy. Simply declare your StorageClasses in your `values.yaml` for deployment. If you are not using helm, you will need to declare all necessary volume mounts in the controller Pod manually.
 
 ## Controller command line options
 
