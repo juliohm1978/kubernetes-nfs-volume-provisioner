@@ -37,7 +37,7 @@ helm del --purge nfsprov
 
 ### StorageClasses
 
-The provisioner controller can automatically create subdirectories and adjust permissions in the NFS share before delivering PVs to the cluster. In order to use this feature, the NFS shares used by your StorageClasses must be mounted into the controller Pod as volumes. Using the provided helm chart, you can declare StorageClasses in your `values.yaml`. They will be deployed along with the controller and will use these values to mount the volumes for you. Inside the controller Pod, these will be mounted at:
+The provisioner controller can automatically create subdirectories and adjust permissions in the NFS share before delivering PVs to the cluster. In order to use this feature, the NFS shares used by your StorageClasses must be mounted into the controller Pod as volumes. Using the provided helm chart, you can declare StorageClasses in your `values.yaml`. They will be deployed along with the controller and mounted for you. Inside the controller Pod, these will be mounted at:
 
 ```text
 /mnt/nfs/<StorageClassName>/<ShareName>
