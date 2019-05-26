@@ -1,10 +1,10 @@
 # Kubernetes NFS Volume Provisioner
 
-## Introduction
+## 1) Introduction
 
 A somewhat flexible Kubernetes controller that can provision NFS Persistent Volumes in a consistent and predictable way. It relies on the `kubectl` binary as a robust API client to watch for PersistentVolumeClaim events and react in order to provision PersistentVolumes accordingly.
 
-## Installation
+## 2) Installation
 
 Before you can use this controller, please note a few things.
 
@@ -53,7 +53,7 @@ In order to provide PV Data Initialization, the controller runs as root inside i
 
 To further customize your deployment, take a look at the chart [`values.yaml`](https://github.com/juliohm1978/charts/tree/master/charts/k8s-nfs-provisioner) for details.
 
-## How to use it
+## 3) How to use it
 
 Once installed, you should have a single `Pod` managed by a simple `Deployment`. There are no services or ingresses to be exposed, since all work is done in-cluster.
 
@@ -184,7 +184,7 @@ In the above example, the PV provisioned points to:
 
 As expected by Kubernetes, the `/subpath/default-myclaim` subdirectories **SHOULD** exist in the remote NFS share. Otherwise, the volume mount inside a Pod will fail.
 
-## PV Data Initialization
+## 4) PV Data Initialization
 
 To make your life easier, the controller can automatically create that unique path inside the NFS share and adjust owner and permissions before it delivers the PersistentVolume. This can be configured with annotations in the PVC.
 
@@ -214,7 +214,7 @@ These annotations allow PVs to be fully provisioned, making sure its volume dire
 
 **IMPORTANT**: In order for this feature to work, the controller Pod needs to have access to the same NFS share declared in your StorageClass. In practice, that means the NFS share must be mounted on the controller at `/nfs/<storage-class-name>`. Using the provided helm chart, this should farily easy. Simply declare your StorageClasses in your `values.yaml` for deployment. If you are not using helm, you will need to declare all necessary volume mounts in the controller Pod manually.
 
-## Controller command line options
+## 5) Controller command line options
 
 The controller itself accepts a few command line options. They allow debugging information to be shown and some options to be defined globally.
 
@@ -227,7 +227,7 @@ The controller itself accepts a few command line options. They allow debugging i
 | `--debugLevel`    | Adjust log level displayed on stdout. Possible values: error, warning, info, debug. Default: info. |
 | `--nfsVersion`    | Which version of NFS mount to use. Possible values: 3 or 4. Default: 4. |
 
-## Troubleshooting
+## 6) Troubleshooting
 
 In case of problems, you can always check the output of the controller's Pod using kubectl directly. It should print any Exception stacktraces if there are any. I tried to include as many relevant log messages as possible to make sure you can see what exactly the controller is trying to do at any time. If you need to see more details, you can increase verbosity by adjusting the `debugLevel`, which is one of the controller's command line arguments.
 
