@@ -152,8 +152,7 @@ parameters:
   namespace: some-namespace
 
   ## If "true", the PV object will not be removed when the PVC is deleted.
-  ## NOTE: Reclaim policies from this StorageClass will be applied to all PVs
-  ## removed from the cluster: RETAIN or DELETE.
+  ## NOTE: When removed, reclaim policies will be applied.
   ## Optional
   ## Default: false
   keepPv: "false"
