@@ -35,6 +35,16 @@ Uninstall should be a straight forward `helm del`.
 helm del --purge nfsprov
 ```
 
+### StorageClasses
+
+The provisioner controller can automatically create subdirectories and adjust permissions in the NFS share before delivering PVs to the cluster. In order to use this feature, the NFS shares used by your StorageClasses must be mounted into the controller Pod as volumes. Using the provided helm chart, you can declare StorageClasses in your `values.yaml`. They will be deployed along with the controller and will use these values to mount the volumes for you. Inside the controller Pod, these will be mounted at:
+
+```text
+/mnt/nfs/<StorageClassName>/<ShareName>
+```
+
+If you deploy the controller without using the helm chart, you will need to provide these volumes manually.
+
 To further customize your deployment, take a look at the chart [`values.yaml`](https://github.com/juliohm1978/charts/tree/master/charts/k8s-nfs-provisioner) for details.
 
 ## How to use it
