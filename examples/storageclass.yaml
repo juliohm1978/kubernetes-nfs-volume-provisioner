@@ -11,8 +11,6 @@ parameters:
   # namespace: some-namespace
   # readOnly: "true"
 reclaimPolicy: Delete
-mountOptions:
-  - "loud"
 volumeBindingMode: Immediate
 
 ---
@@ -26,5 +24,7 @@ parameters:
   server: 192.168.100.58
   share: /myshare
   readOnly: "true"
+mountOptions:
+  - "loud"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
