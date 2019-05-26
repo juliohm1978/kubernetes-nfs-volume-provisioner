@@ -51,7 +51,7 @@ To further customize your deployment, take a look at the chart [`values.yaml`](h
 
 Once installed, you should have a single `Pod` managed by a simple `Deployment`. There are no services or ingresses to be exposed, since all work is done in-cluster.
 
-At this point, you can create `StorageClass` objects in you cluster providing a number of values on how NFS volumes will be provisioned. You can declare as many StorageClasses as you want with different parameters. All they need in common the field `provisioner: nfs-provisioner.juliohm.com.br`.
+The StorageClasses you declare must use the provisioner `nfs-provisioner.juliohm.com.br` in order for its events to be picked up by the controller. You can declare as many StorageClasses as you want with different parameters and different servers.
 
 Here's a full example:
 
