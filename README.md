@@ -45,6 +45,12 @@ The provisioner controller can automatically create subdirectories and adjust pe
 
 If you deploy the controller without using the helm chart, you will need to provide these volumes manually.
 
+### The controller runs as root
+
+In order to provide PV Data Initialization, the controller runs as root inside its container.
+
+### Cutomize your deployment
+
 To further customize your deployment, take a look at the chart [`values.yaml`](https://github.com/juliohm1978/charts/tree/master/charts/k8s-nfs-provisioner) for details.
 
 ## How to use it
