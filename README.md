@@ -12,7 +12,6 @@ Before you can use this controller, please note a few things.
 
 This controller **does not** provide an NFS server to your cluster. You will need at least one NFS service accessible in your network, and this controller will not give you that.
 
-
 ### Install using helm
 
 You can also use a helm chart created for this project. The chart is hosted in [one of my Github repositories](https://github.com/juliohm1978/charts). First, add the repo to your local helm installation.
@@ -21,6 +20,8 @@ You can also use a helm chart created for this project. The chart is hosted in [
 helm repo add juliohm1978 https://raw.githubusercontent.com/juliohm1978/charts/master/index
 helm repo up
 ```
+
+*OPTIONAL*: Edit `values.yaml` to declare your StorageClasses.
 
 Now, use the chart `juliohm1978/k8s-nfs-provisioner`.
 
