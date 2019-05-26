@@ -26,7 +26,7 @@ helm repo up
 Now, use the chart `juliohm1978/k8s-nfs-provisioner`.
 
 ```shell
-helm upgrade --install nfsprov juliohm1978/k8s-nfs-provisioner
+helm upgrade --install -f myvalues.yaml nfsprov juliohm1978/k8s-nfs-provisioner
 ```
 
 Uninstall should be a straight forward `helm del`.
