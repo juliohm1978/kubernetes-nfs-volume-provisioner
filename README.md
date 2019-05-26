@@ -182,7 +182,7 @@ metadata:
     nvs-provisioner.juliohm.com.br/init-perms: "true"
     nvs-provisioner.juliohm.com.br/uid: "1000"
     nvs-provisioner.juliohm.com.br/gid: "1000"
-    nvs-provisioner.juliohm.com.br/mode: "644"
+    nvs-provisioner.juliohm.com.br/mode: "755"
 spec:
   accessModes:
     - ReadWriteOnce
