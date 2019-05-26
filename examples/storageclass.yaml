@@ -8,11 +8,11 @@ parameters:
   server: 192.168.3.96
   share: /myshare
   path: /subpath
-  namespace: some-namespace
-  readOnly: "true"
+  # namespace: some-namespace
+  # readOnly: "true"
+reclaimPolicy: Delete
 mountOptions:
   - "loud"
-reclaimPolicy: Delete
 volumeBindingMode: Immediate
 
 ---

@@ -144,8 +144,6 @@ def provision_pv(pvc):
         path = sc.parameters["path"]
     if "readOnly" in sc.parameters and sc.parameters["readOnly"] == "true":
         readOnly = True
-    if "mountOptions" in sc.parameters:
-        mountOptions = sc.parameters["mountOptions"]
     if "keepPv" in sc.parameters and sc.parameters["keepPv"] == "true":
         keepPv = True
 
@@ -185,7 +183,8 @@ def provision_pv(pvc):
         pv.spec.claim_ref.uid       = pvc.metadata.uid
     pv.spec.access_modes = pvc.spec.access_modes
     pv.spec.persistent_volume_reclaim_policy = sc.reclaim_policy
-    pv.spec.mount_options = list()
+    if sc.mount_options:
+        pv.spec.mount_options = sc.mount_options
     pv.spec.capacity = dict()
     pv.spec.capacity["storage"] = pvc.spec.resources.requests["storage"]
     pv.spec.nfs = kubernetes.client.V1NFSVolumeSource(

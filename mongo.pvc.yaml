@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    nfs-provisioner.juliohm.com.br/init-perms: "true"
+    nfs-provisioner.juliohm.com.br/uid: "999"
+    nfs-provisioner.juliohm.com.br/gid: "999"
+    nfs-provisioner.juliohm.com.br/mode: "755"
+  labels:
+    app: mongodb-replicaset
+    release: mmm
+  name: datadir-mmm-mongodb-replicaset-0
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: sc01
+  volumeMode: Filesystem
+
