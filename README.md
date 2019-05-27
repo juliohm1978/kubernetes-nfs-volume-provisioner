@@ -1,6 +1,8 @@
 # Kubernetes NFS Volume Provisioner
 
-Image hosted on Docker Hub: [juliohm/k8s-nfs-provisioner](https://cloud.docker.com/repository/docker/juliohm/k8s-nfs-provisioner)
+Image hosted on Docker Hub: [juliohm/k8s-nfs-provisioner](https://cloud.docker.com/repository/docker/juliohm/k8s-nfs-provisioner).
+
+> NOTE: `latest` tag from `master` branch is used for development and, by consequence, unstable. Make sure you are using a [versioned tag](https://github.com/juliohm1978/kubernetes-nfs-volume-provisioner/releases) for a stable build..
 
 ## 1) Introduction
 
