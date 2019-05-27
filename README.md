@@ -196,10 +196,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: myclaim
   annotations:
-    nfs\-provisioner.juliohm.com.br/init-perms: "true"
-    nfs\-provisioner.juliohm.com.br/uid: "1000"
-    nfs\-provisioner.juliohm.com.br/gid: "1000"
-    nfs\-provisioner.juliohm.com.br/mode: "755"
+    nfs-provisioner.juliohm.com.br/init-perms: "true"
+    nfs-provisioner.juliohm.com.br/uid: "1000"
+    nfs-provisioner.juliohm.com.br/gid: "1000"
+    nfs-provisioner.juliohm.com.br/mode: "755"
 spec:
   accessModes:
     - ReadWriteOnce
