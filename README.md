@@ -227,7 +227,6 @@ The controller itself accepts a few command line options. They allow debugging i
 | `--namespace`     | Restrict all StorageClasses to one particular namespace. If this value is defined, The `namespace` parameter in all StorageClasses will be ignored. |
 | `--interval`      | Polling interval, in seconds, on the Kubernetes API. Default 30. |
 | `--debugLevel`    | Adjust log level displayed on stdout. Possible values: error, warning, info, debug. Default: info. |
-| `--nfsVersion`    | Which version of NFS mount to use. Possible values: 3 or 4. Default: 4. |
 
 ## 6) Troubleshooting
 
