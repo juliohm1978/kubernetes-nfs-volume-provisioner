@@ -115,7 +115,7 @@ def provision_pv(pvc):
         return
     
     if not sc.provisioner == PROVISIONER_NAME:
-        logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+". StorageClass "+scname+". Provisioner does not match "+PROVISIONER_NAME+". Ingoring event.")
         return
 
     if args.namespace and pvc.metadata.namespace != args.namespace:
