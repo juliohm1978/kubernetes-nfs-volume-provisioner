@@ -1,3 +1,0 @@
-persistentVolume:
-  annotations:
-    myannotation: "123"
