@@ -1,5 +1,5 @@
 IMAGE=juliohm/k8s-nfs-provisioner
-TAG=1.2.3-beta
+TAG=1.2.3
 
 build:
 	docker build --squash -t $(IMAGE):latest .

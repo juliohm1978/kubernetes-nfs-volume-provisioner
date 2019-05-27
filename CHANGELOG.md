@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 1.2.3-beta
+## 2019-05-27 1.2.3
 
 * Fix error message when provisioner name does not match the one declared in the StorageClass.
 * Remove nfs-utils from Dockerfile, not needed since v1.2.
