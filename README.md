@@ -1,5 +1,7 @@
 # Kubernetes NFS Volume Provisioner
 
+Image hosted on Docker Hub: [juliohm/k8s-nfs-provisioner](https://cloud.docker.com/repository/docker/juliohm/k8s-nfs-provisioner)
+
 ## 1) Introduction
 
 A somewhat flexible Kubernetes controller that can provision NFS Persistent Volumes in a consistent and predictable way. It relies on the [Python Kubernetes library](https://github.com/kubernetes-client/python) to watch for PersistentVolumeClaim events and react in order to provision PersistentVolumes accordingly.
