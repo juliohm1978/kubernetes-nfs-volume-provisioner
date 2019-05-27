@@ -5,6 +5,7 @@
 * Fix error message when provisioner name does not match the one declared in the StorageClass.
 * Remove nfs-utils from Dockerfile, not needed since v1.2.
 * Remove kubectl from Dockerfile, not needed since v1.2.
+* Remove --nfsVersion from cmd arguments, not used since v1.2.
 
 ## 2019-05-26 1.2.2
 

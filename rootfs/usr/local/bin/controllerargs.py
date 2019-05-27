@@ -28,12 +28,6 @@ p.add_argument(
 )
 
 p.add_argument(
-    "--nfsVersion",
-    default="4",
-    help="NFS version to use. Possible values: 3 or 4. Default: 4."
-)
-
-p.add_argument(
     "--disablePvInit",
     action="store_true",
     default=False,

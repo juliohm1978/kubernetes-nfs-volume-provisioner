@@ -15,10 +15,6 @@ import controllerargs
 
 args = controllerargs.p.parse_args()
 
-nfsversion = "nfs"
-if args.nfsVersion == "4":
-    nfsversion = "nfs4"
-
 PROVISIONER_NAME     = "nfs-provisioner.juliohm.com.br"
 ANNOTATION_INITPERMS = "nfs-provisioner.juliohm.com.br/init-perms"
 ANNOTATION_UID       = "nfs-provisioner.juliohm.com.br/uid"
