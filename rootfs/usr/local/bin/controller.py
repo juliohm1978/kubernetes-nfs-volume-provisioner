@@ -111,15 +111,15 @@ def provision_pv(pvc):
         return
     
     if not sc.provisioner == PROVISIONER_NAME:
-        logging.warning("PVC "+pvcfullname+". StorageClass "+scname+". Provisioner does not match "+PROVISIONER_NAME+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+". StorageClass "+scname+". Provisioner does not match "+PROVISIONER_NAME+". Igoring event.")
         return
 
     if args.namespace and pvc.metadata.namespace != args.namespace:
-        logging.warning("PVC "+pvcfullname+" namespace does not patch provisioner scope: "+args.namespace+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+" namespace does not patch provisioner scope: "+args.namespace+". Igoring event.")
         return
 
     if ("namespace" in sc.parameters) and (sc.parameters["namespace"] != pvc.metadata.namespace):
-        logging.warning("PVC "+pvcfullname+" namespace does not patch StorageClass scope: "+sc.parameters['namespace']+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+" namespace does not patch StorageClass scope: "+sc.parameters['namespace']+". Igoring event.")
         return
     
     pvNamePrefix = None
@@ -144,7 +144,7 @@ def provision_pv(pvc):
         keepPv = True
 
     if not server:
-        logging.warning("PVC "+pvcfullname+". StorageClass "+scname+". Missing parameter 'server'. Ingoring event.")
+        logging.warning("PVC "+pvcfullname+". StorageClass "+scname+". Missing parameter 'server'. Igoring event.")
         return
 
     pvname = pvc.metadata.namespace + "-" + pvc.metadata.name
@@ -153,14 +153,14 @@ def provision_pv(pvc):
 
     pv = coreapi.list_persistent_volume(field_selector="metadata.name="+pvname)
     if len(pv.items) > 0:
-        logging.info("PVC "+pvcfullname+". PV "+pvname+" already exists. Ingoring event.")
+        logging.info("PVC "+pvcfullname+". PV "+pvname+" already exists. Igoring event.")
         return
 
-    if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations:
-        if pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true" and not args.disablePvInit:
-            if not init_pv_data(pvc, sc):
-                logging.info("PVC "+pvcfullname+". PV "+pvname+" data cannot be initialized. Ingoring event.")
-                return
+    mustInitPV = args.forcePvInit or (pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "true")
+    if mustInitPV:
+        if not init_pv_data(pvc, sc):
+            logging.info("PVC "+pvcfullname+". PV "+pvname+" data cannot be initialized. Igoring event.")
+            return
 
     pv = kubernetes.client.V1PersistentVolume()
     pv.metadata = kubernetes.client.V1ObjectMeta()
@@ -233,15 +233,15 @@ def remove_pv(pvc):
     sc = sc.items[0]
     
     if not sc.provisioner == PROVISIONER_NAME:
-        logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+" storageClassName does not match "+PROVISIONER_NAME+". Igoring event.")
         return
     if ("namespace" in sc.parameters) and (sc.parameters["namespace"] != pvc.metadata.namespace):
-        logging.warning("PVC "+pvcfullname+" namespace does not patch StorageClass scope: "+sc.parameters['namespace']+". Ingoring event.")
+        logging.warning("PVC "+pvcfullname+" namespace does not patch StorageClass scope: "+sc.parameters['namespace']+". Igoring event.")
         return
 
     pvname = pvc.spec.volume_name
     if not pvname:
-        logging.warning("PVC "+pvcfullname+" is not associated to a volumeName. Ingoring event.")
+        logging.warning("PVC "+pvcfullname+" is not associated to a volumeName. Igoring event.")
         return
 
     if "keepPv" in sc.parameters and sc.parameters["keepPv"] == "true":
@@ -251,7 +251,7 @@ def remove_pv(pvc):
 
     pv = coreapi.list_persistent_volume(field_selector="metadata.name="+pvname).items
     if len(pv) <= 0:
-        logging.debug("PVC "+pvcfullname+". PV "+pvname+" already exists. Ingoring event.")
+        logging.debug("PVC "+pvcfullname+". PV "+pvname+" already exists. Igoring event.")
         return
     pv = pv[0]
 

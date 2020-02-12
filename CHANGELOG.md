@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2020-02-12 1.2.6
+
+* Add new argument `--forcePvInit` which forces PV initialization without annotations on the PVC.
+* Bump version to 1.2.6 to match the helm chart version.
+
 ## 2019-05-27 1.2.3
 
 * Fix error message when provisioner name does not match the one declared in the StorageClass.

@@ -35,6 +35,13 @@ p.add_argument(
 )
 
 p.add_argument(
+    "--forcePvInit",
+    action="store_true",
+    default=False,
+    help="Force PV initialization even without proper annotations Directories inside the NFS share are created with root owner."
+)
+
+p.add_argument(
     "--namespace",
     help="Restrict the controller actions to a specific namespace."
 )
