@@ -220,6 +220,8 @@ These annotations allow PVs to be fully provisioned, making sure its volume dire
 
 You can force the controller to init PV sub directories for all PVCs, even ones without any annotations. Without annotations, PV directories are created with `root` owner and permissions. This allows for easier management, since you can simply `chown` the created directories once PVs are provisioned.
 
+To enable this option, the argument `--forcePvInit` should be passed to the controller.
+
 **IMPORTANT**: In order for this feature to work, the controller Pod needs to have access to the same NFS share declared in your StorageClass. In practice, that means the NFS share must be mounted on the controller at `/nfs/<storage-class-name>`. Using the provided helm chart, this should farily easy. Simply declare your StorageClasses in your `values.yaml` for deployment. If you are not using helm, you will need to declare all necessary volume mounts in the controller Pod manually.
 
 ## 5) Controller command line options
