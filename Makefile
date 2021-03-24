@@ -2,7 +2,7 @@ IMAGE=juliohm/k8s-nfs-provisioner
 TAG=1.2.7
 
 build:
-	docker build --squash -t $(IMAGE):latest .
+	docker build -t $(IMAGE):latest .
 
 push: build
 	docker tag $(IMAGE):latest $(IMAGE):$(TAG)
