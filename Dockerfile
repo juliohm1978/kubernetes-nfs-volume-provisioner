@@ -1,4 +1,4 @@
-FROM python:3.7.3-alpine3.9
+FROM python:3.9.4-alpine3.13
 
 RUN pip install jinja2 kubernetes
 

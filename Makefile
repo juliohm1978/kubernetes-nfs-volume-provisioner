@@ -1,5 +1,5 @@
 IMAGE=juliohm/k8s-nfs-provisioner
-TAG=1.2.7
+TAG=1.2.8
 
 build:
 	docker build -t $(IMAGE):latest .

@@ -12,6 +12,7 @@ import kubernetes
 import urllib3
 import os
 import controllerargs
+import hashlib
 
 args = controllerargs.p.parse_args()
 
@@ -45,6 +46,7 @@ storageapi = kubernetes.client.StorageV1Api()
 ################################################################################
 def init_pv_data(pvc, sc):
     pvcfullname = pvc.metadata.namespace + '-' + pvc.metadata.name
+    pvcfullname = "pvc-"+hashlib.md5(pvcfullname.encode()).hexdigest()
     logging.info("PVC "+pvcfullname+". Initializing NFS share directories")
 
     if pvc.metadata.annotations and ANNOTATION_INITPERMS in pvc.metadata.annotations and pvc.metadata.annotations[ANNOTATION_INITPERMS] == "false":
@@ -150,6 +152,8 @@ def provision_pv(pvc):
     pvname = pvc.metadata.namespace + "-" + pvc.metadata.name
     if pvNamePrefix:
         pvname = pvNamePrefix + "-" + pvname
+    if len(pvname) > 63:
+        pvname = "pv-"+hashlib.md5(pvname.encode()).hexdigest()
 
     pv = coreapi.list_persistent_volume(field_selector="metadata.name="+pvname)
     if len(pv.items) > 0:
@@ -166,8 +170,8 @@ def provision_pv(pvc):
     pv.metadata = kubernetes.client.V1ObjectMeta()
     pv.metadata.name = pvname
     pv.metadata.labels = dict()
-    pv.metadata.labels[LABEL_PVCNAME] = pvc.metadata.name
-    pv.metadata.labels[LABEL_PVCNAMESPACE] = pvc.metadata.namespace
+    pv.metadata.labels[LABEL_PVCNAME] = pvc.metadata.name[:63]
+    pv.metadata.labels[LABEL_PVCNAMESPACE] = pvc.metadata.namespace[:63]
     pv.metadata.labels[LABEL_STORAGECLASSNAME] = scname
     pv.spec = kubernetes.client.V1PersistentVolumeSpec()
     pv.status = kubernetes.client.V1PersistentVolumeStatus()
@@ -275,6 +279,7 @@ while True:
             eventtype = event["type"]
             pvc = event["object"]
             pvcfullname = pvc.metadata.namespace+"-"+pvc.metadata.name
+            pvcfullname = "pvc-"+hashlib.md5(pvcfullname.encode()).hexdigest()
             try:
                 logging.debug("Event: "+eventtype+" "+pvcfullname)
                 if eventtype == "ADDED":

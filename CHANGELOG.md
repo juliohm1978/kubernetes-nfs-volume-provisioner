@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2020-04-29 1.2.8
+
+* Improve PV name provisioning as a hash of the Namespace+PVC string. Avoid using more than the 63 characater limit.
+* Bump python version to 3.9.4
+
+## 2020-03-24 1.2.7
+
+* Merge upstream security fixes.
+
 ## 2020-02-12 1.2.6
 
 * Add new argument `--forcePvInit` which forces PV initialization without annotations on the PVC.
